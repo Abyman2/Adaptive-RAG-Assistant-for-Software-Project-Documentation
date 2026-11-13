@@ -1,0 +1,210 @@
+{
+  "version": "2.0-held-out-frozen",
+  "document": "sample_docs/sample_project.md",
+  "chunk_config": {
+    "chunk_size": 100,
+    "overlap": 25
+  },
+  "questions": [
+    {
+      "id": "held_01",
+      "category": "direct_technical",
+      "question": "What terminal command launches the client-side user interface in development mode?",
+      "answerable": true,
+      "gold_chunk_ids": [2],
+      "gold_sections": ["## 3. Frontend Architecture and Client Configuration"],
+      "gold_evidence_snippets": ["npm run dev"],
+      "reference_answer": "npm run dev boots the frontend development server on port 5173."
+    },
+    {
+      "id": "held_02",
+      "category": "direct_technical",
+      "question": "What HTTP route delivers Prometheus performance metrics for application monitoring?",
+      "answerable": true,
+      "gold_chunk_ids": [9],
+      "gold_sections": ["## 8. Deployment, CI/CD, and Observability"],
+      "gold_evidence_snippets": ["/actuator/prometheus"],
+      "reference_answer": "Prometheus metrics are exposed at /actuator/prometheus."
+    },
+    {
+      "id": "held_03",
+      "category": "lexical_gap",
+      "question": "How can an engineer manually trigger database structure updates from the CLI?",
+      "answerable": true,
+      "gold_chunk_ids": [6],
+      "gold_sections": ["## 6. Database Architecture and Schema Migrations"],
+      "gold_evidence_snippets": ["./mvnw flyway:migrate"],
+      "reference_answer": "Developers run ./mvnw flyway:migrate to apply pending Flyway migrations."
+    },
+    {
+      "id": "held_04",
+      "category": "direct_technical",
+      "question": "What distinct access privilege tiers are enforced in the role-based security system?",
+      "answerable": true,
+      "gold_chunk_ids": [5, 6],
+      "gold_sections": ["## 5. Security, Authentication, and Access Control"],
+      "gold_evidence_snippets": ["ROLE_CUSTOMER", "ROLE_PROVIDER", "ROLE_ADMIN"],
+      "reference_answer": "Three user roles: ROLE_CUSTOMER, ROLE_PROVIDER, and ROLE_ADMIN."
+    },
+    {
+      "id": "held_05",
+      "category": "lexical_gap",
+      "question": "Which message queues or event streams receive technician routing and dispatch updates?",
+      "answerable": true,
+      "gold_chunk_ids": [7, 8],
+      "gold_sections": ["## 7. Event-Driven Messaging and Real-Time Communication"],
+      "gold_evidence_snippets": ["dispatches.events"],
+      "reference_answer": "The dispatches.events Kafka topic receives technician matching and dispatch events."
+    },
+    {
+      "id": "held_06",
+      "category": "lexical_gap",
+      "question": "What base endpoint does the web client target when making remote HTTP calls to the backend?",
+      "answerable": true,
+      "gold_chunk_ids": [2, 3],
+      "gold_sections": ["## 3. Frontend Architecture and Client Configuration"],
+      "gold_evidence_snippets": ["http://localhost:8080/api/v1"],
+      "reference_answer": "The frontend Axios client is directed at http://localhost:8080/api/v1."
+    },
+    {
+      "id": "held_07",
+      "category": "lexical_gap",
+      "question": "How does the system ensure incoming bearer credentials belong to a valid authenticated user session?",
+      "answerable": true,
+      "gold_chunk_ids": [5],
+      "gold_sections": ["## 5. Security, Authentication, and Access Control"],
+      "gold_evidence_snippets": ["JwtAuthenticationFilter", "Bearer token"],
+      "reference_answer": "JwtAuthenticationFilter intercepts requests and validates the cryptographic Bearer token signature in the Authorization header."
+    },
+    {
+      "id": "held_08",
+      "category": "architectural",
+      "question": "What state management library handles optimistic updates and server-state synchronization on the client?",
+      "answerable": true,
+      "gold_chunk_ids": [3],
+      "gold_sections": ["## 3. Frontend Architecture and Client Configuration"],
+      "gold_evidence_snippets": ["TanStack Query"],
+      "reference_answer": "TanStack Query manages server-state caching, background revalidation, and optimistic mutations."
+    },
+    {
+      "id": "held_09",
+      "category": "direct_technical",
+      "question": "Where are versioned SQL database schema migration scripts stored in the repository?",
+      "answerable": true,
+      "gold_chunk_ids": [6],
+      "gold_sections": ["## 6. Database Architecture and Schema Migrations"],
+      "gold_evidence_snippets": ["src/main/resources/db/migration"],
+      "reference_answer": "Flyway migration scripts are located in src/main/resources/db/migration."
+    },
+    {
+      "id": "held_10",
+      "category": "architectural",
+      "question": "What base container image distribution is used in the multi-stage Dockerfiles?",
+      "answerable": true,
+      "gold_chunk_ids": [8],
+      "gold_sections": ["## 8. Deployment, CI/CD, and Observability"],
+      "gold_evidence_snippets": ["Eclipse Temurin 17 Alpine Linux"],
+      "reference_answer": "Minimal container images are based on Eclipse Temurin 17 Alpine Linux."
+    },
+    {
+      "id": "held_11",
+      "category": "architectural",
+      "question": "What staging platform automatically hosts preview deployments for pull requests?",
+      "answerable": true,
+      "gold_chunk_ids": [1, 2, 8, 9],
+      "gold_sections": ["## 2. Technology Stack & Frameworks", "## 8. Deployment, CI/CD, and Observability"],
+      "gold_evidence_snippets": ["Railway"],
+      "reference_answer": "Railway hosts cloud preview environments for pull requests and staging."
+    },
+    {
+      "id": "held_12",
+      "category": "architectural",
+      "question": "What in-memory datastore caches geospatial technician positions and active session state?",
+      "answerable": true,
+      "gold_chunk_ids": [1],
+      "gold_sections": ["## 2. Technology Stack & Frameworks"],
+      "gold_evidence_snippets": ["Redis 7"],
+      "reference_answer": "Redis 7 cluster provides caching for session state and geospatial provider indexing."
+    },
+    {
+      "id": "held_13",
+      "category": "unanswerable",
+      "question": "What Stripe API secret key is used for payment processing?",
+      "answerable": false,
+      "gold_chunk_ids": [],
+      "gold_sections": [],
+      "gold_evidence_snippets": [],
+      "reference_answer": "The documentation does not provide enough information."
+    },
+    {
+      "id": "held_14",
+      "category": "unanswerable",
+      "question": "What is the Redis memory eviction policy when cache capacity exceeds 80%?",
+      "answerable": false,
+      "gold_chunk_ids": [],
+      "gold_sections": [],
+      "gold_evidence_snippets": [],
+      "reference_answer": "The documentation does not provide enough information."
+    },
+    {
+      "id": "held_15",
+      "category": "unanswerable",
+      "question": "What GraphQL schema federation gateway is deployed in front of the services?",
+      "answerable": false,
+      "gold_chunk_ids": [],
+      "gold_sections": [],
+      "gold_evidence_snippets": [],
+      "reference_answer": "The documentation does not provide enough information."
+    },
+    {
+      "id": "held_16",
+      "category": "unanswerable",
+      "question": "How do you configure Docker Swarm manager nodes for high availability failover?",
+      "answerable": false,
+      "gold_chunk_ids": [],
+      "gold_sections": [],
+      "gold_evidence_snippets": [],
+      "reference_answer": "The documentation does not provide enough information."
+    },
+    {
+      "id": "held_17",
+      "category": "unanswerable",
+      "question": "What is the team's cloud hosting monthly budget limit on AWS?",
+      "answerable": false,
+      "gold_chunk_ids": [],
+      "gold_sections": [],
+      "gold_evidence_snippets": [],
+      "reference_answer": "The documentation does not provide enough information."
+    },
+    {
+      "id": "held_18",
+      "category": "unanswerable",
+      "question": "What code editor and IDE plugins does the development team recommend?",
+      "answerable": false,
+      "gold_chunk_ids": [],
+      "gold_sections": [],
+      "gold_evidence_snippets": [],
+      "reference_answer": "The documentation does not provide enough information."
+    },
+    {
+      "id": "held_19",
+      "category": "unanswerable",
+      "question": "What OAuth2 client ID is configured for GitHub social developer login?",
+      "answerable": false,
+      "gold_chunk_ids": [],
+      "gold_sections": [],
+      "gold_evidence_snippets": [],
+      "reference_answer": "The documentation does not provide enough information."
+    },
+    {
+      "id": "held_20",
+      "category": "unanswerable",
+      "question": "What Confluent Kafka Schema Registry URL is used for Avro message schema validation?",
+      "answerable": false,
+      "gold_chunk_ids": [],
+      "gold_sections": [],
+      "gold_evidence_snippets": [],
+      "reference_answer": "The documentation does not provide enough information."
+    }
+  ]
+}

@@ -82,7 +82,7 @@ st.markdown("""
 def load_models():
     """Load semantic retriever and generator models once and cache them."""
     semantic = SemanticRetriever()
-    adaptive = AdaptiveRetriever(semantic, min_threshold=0.28)
+    adaptive = AdaptiveRetriever(semantic, min_threshold=0.31)
     generator = AnswerGenerator()
     baseline = TfidfBaseline()
     return semantic, adaptive, generator, baseline
@@ -90,7 +90,7 @@ def load_models():
 
 def main():
     st.title("📚 Adaptive RAG Assistant for Software Project Documentation")
-    st.caption("A Transformer-powered engineering tool that dynamically adapts retrieval context for software repositories.")
+    st.caption("A Transformer-powered engineering tool that dynamically adapts retrieval context and abstains on out-of-domain questions.")
 
     # Load models
     semantic, adaptive, generator, baseline = load_models()
@@ -98,11 +98,11 @@ def main():
     # Sidebar Configurations
     st.sidebar.header("⚙️ Adaptive Engine Calibration")
     focused_thresh = st.sidebar.slider("Focused Mode Threshold", 0.40, 0.80, 0.55, 0.05,
-                                      help="Queries with top-1 score >= threshold use pinpoint top-3 chunks.")
+                                      help="Queries with top-1 score >= threshold retrieve top-3 chunks.")
     expanded_thresh = st.sidebar.slider("Expanded Mode Threshold", 0.25, 0.55, 0.35, 0.05,
                                        help="Queries in this range expand context to top-6 chunks.")
-    min_thresh = st.sidebar.slider("Abstention Threshold (Calibrated)", 0.15, 0.40, 0.28, 0.02,
-                                  help="Empirically calibrated cutoff; queries below this are flagged as unanswerable.")
+    min_thresh = st.sidebar.slider("Abstention Threshold (Calibrated)", 0.15, 0.45, 0.31, 0.01,
+                                  help="Empirically calibrated cutoff on development set; queries below this are flagged as unanswerable.")
 
     adaptive.focused_threshold = focused_thresh
     adaptive.expanded_threshold = expanded_thresh
@@ -113,8 +113,8 @@ def main():
     **Core Technology Stack:**
     - **Embeddings:** `all-MiniLM-L6-v2` (384d Dense)
     - **Generator:** `google/flan-t5-small` (Seq2Seq)
-    - **Baseline:** TF-IDF Cosine Similarity
-    - **Related Precedent:** Calibrated abstention thresholding
+    - **Baseline:** Scikit-learn TF-IDF Vectorizer
+    - **Related Precedent:** Calibrated abstention cutoff (Emirhan Yildirim)
     """)
 
     # Initialize Session State
@@ -226,16 +226,16 @@ def main():
         else:
             preset_questions = [
                 "Select an example question...",
-                "Which database does UniServe use?",
-                "What framework powers the backend application?",
-                "Which port does the frontend run on?",
-                "What tool manages database schema migrations?",
-                "What command starts the frontend in development mode?",
-                "What is the token expiration duration for access tokens?",
-                "What Kafka topics receive asynchronous events?",
-                "What is the developer's favorite programming language? (Unanswerable test)",
-                "What is the monthly AWS cloud hosting budget? (Unanswerable test)",
-                "What Stripe API secret key is used? (Unanswerable test)"
+                "What terminal command launches the client-side user interface in development mode?",
+                "What HTTP route delivers Prometheus performance metrics for application monitoring?",
+                "How can an engineer manually trigger database structure updates from the CLI?",
+                "What distinct access privilege tiers are enforced in the role-based security system?",
+                "Which message queues or event streams receive technician routing and dispatch updates?",
+                "What base endpoint does the web client target when making remote HTTP calls to the backend?",
+                "What in-memory datastore caches geospatial technician positions and active session state?",
+                "What Stripe API secret key is used for payment processing? (Unanswerable query)",
+                "What is the Redis memory eviction policy when cache capacity exceeds 80%? (Unanswerable query)",
+                "What is the team's cloud hosting monthly budget limit on AWS? (Unanswerable query)"
             ]
             selected_preset = st.selectbox("Quick-test example questions:", preset_questions)
             default_query = selected_preset.split(" (")[0] if selected_preset != preset_questions[0] else ""
@@ -291,7 +291,7 @@ def main():
             st.warning("Please index project documents in the **Project Manager** tab first.")
         else:
             comp_query = st.text_input("Enter query for side-by-side comparison:",
-                                       value="What framework powers the backend application?")
+                                       value="How can an engineer manually trigger database structure updates from the CLI?")
             if st.button("Run Side-by-Side Comparison", type="secondary") and comp_query.strip():
                 tfidf_res = baseline.search(comp_query, top_k=3)
                 dense_res = semantic.search(comp_query, top_k=3)
@@ -304,14 +304,17 @@ def main():
                     st.caption("Matches exact token occurrences and term frequency.")
                     for r in tfidf_res:
                         st.metric(f"Rank {r['rank']} Score", f"{r['score']:.3f}")
-                        st.text_area(f"TF-IDF #{r['rank']} ({r['chunk']['source']})", r["chunk"]["text"][:220] + "...", height=110, disabled=True)
+                        match_note = "✅ Lexical overlap" if r["has_match"] else "❌ Zero overlap"
+                        st.caption(match_note)
+                        st.text_area(f"TF-IDF #{r['rank']} ({r['chunk']['source']})", r["chunk"]["text"][:220] + "...", height=100, disabled=True)
 
                 with col2:
                     st.markdown("#### 2. MiniLM Dense Semantic")
                     st.caption("Matches contextual meaning in 384d embedding space.")
                     for r in dense_res:
                         st.metric(f"Rank {r['rank']} Score", f"{r['score']:.3f}")
-                        st.text_area(f"MiniLM #{r['rank']} ({r['chunk']['source']})", r["chunk"]["text"][:220] + "...", height=110, disabled=True)
+                        st.caption("Dense vector cosine similarity")
+                        st.text_area(f"MiniLM #{r['rank']} ({r['chunk']['source']})", r["chunk"]["text"][:220] + "...", height=100, disabled=True)
 
                 with col3:
                     st.markdown("#### 3. Adaptive Dynamic Engine")
@@ -320,7 +323,7 @@ def main():
                     st.write(f"- **Evidence Sufficient:** `{adapt_res['sufficient_evidence']}`")
                     st.write(f"- **Action:** {adapt_res['explanation']}")
                     if not adapt_res['sufficient_evidence']:
-                        st.error("System actively abstains to prevent hallucination!")
+                        st.error("System actively abstains to minimize hallucination risk!")
                     else:
                         st.success(f"Dispatched {len(adapt_res['results'])} evidence chunks to generator.")
 
@@ -328,72 +331,86 @@ def main():
     # 4. Evaluation & Failure Analysis Dashboard
     # -------------------------------------------------------------
     with tab_eval:
-        st.subheader("📊 Held-Out Evaluation & Failure Analysis Dashboard")
-        st.write("Rigorous empirical evaluation comparing TF-IDF keyword baseline against SentenceTransformer MiniLM across both Development and Held-Out test suites.")
+        st.subheader("📊 Rigorous Evaluation & Failure Analysis Dashboard")
+        st.write("Empirical benchmark results evaluating TF-IDF baseline, MiniLM semantic retriever, and Adaptive RAG across answerable ranking and abstention classification.")
 
-        metrics_file = Path("evaluation/results/evaluation_metrics.json")
-        plot_file = Path("evaluation/results/retrieval_comparison.png")
-        table_file = Path("evaluation/results/comparison_table.csv")
+        metrics_file = Path("evaluation/results/evaluation_metrics_v2.json")
+        plot_retrieval = Path("evaluation/results/retrieval_comparison_v2.png")
+        plot_cm = Path("evaluation/results/abstention_confusion_matrix.png")
+        table_file = Path("evaluation/results/comparison_table_v2.csv")
 
         if metrics_file.exists():
             with open(metrics_file, "r") as f:
-                metrics_data = json.load(f)
+                m_data = json.load(f)
 
-            st.markdown("### 🏆 Held-Out Test Set Performance (N=8 unseen queries)")
-            held_out = metrics_data.get("Held-out", {})
+            st.markdown("### 1. Retrieval Ranking Performance on Answerable Queries (N=12)")
+            st.caption("Strict ground truth check against verified gold chunk IDs and evidence snippets.")
+            rank_data = m_data.get("retrieval_ranking_answerable", {})
+            tf_data = rank_data.get("tfidf", {})
+            sem_data = rank_data.get("minilm_semantic", {})
+            adapt_data = rank_data.get("adaptive_rag", {})
 
-            col_m1, col_m2, col_m3, col_m4 = st.columns(4)
-            col_m1.metric("MiniLM Recall@1", f"{held_out.get('semantic_recall_at_1', 0)*100:.1f}%",
-                          delta=f"{(held_out.get('semantic_recall_at_1', 0) - held_out.get('tfidf_recall_at_1', 0))*100:.1f}% vs TF-IDF")
-            col_m2.metric("MiniLM Recall@3", f"{held_out.get('semantic_recall_at_3', 0)*100:.1f}%")
-            col_m3.metric("MiniLM MRR", f"{held_out.get('semantic_mrr', 0):.3f}")
-            col_m4.metric("Adaptive Abstention Acc", f"{held_out.get('adaptive_abstention_accuracy', 0)*100:.1f}%",
-                          delta="Zero Hallucination")
-
-            st.markdown("---")
-            c_left, c_right = st.columns([1.2, 1])
-
-            with c_left:
-                st.markdown("#### Retrieval Performance Visualization")
-                if plot_file.exists():
-                    st.image(str(plot_file), use_container_width=True)
-                else:
-                    st.info("Run `python evaluation/evaluate.py` to regenerate comparison plot.")
-
-            with c_right:
-                st.markdown("#### Abstention Threshold Calibration (Development Set)")
-                st.write("Empirically swept candidate thresholds to optimize true positive retention vs. hallucination prevention (precedent from Emirhan Yildirim `rag-project-assistant`):")
-                if "calibration_sweep" in metrics_data:
-                    sweep_df = pd.DataFrame(metrics_data["calibration_sweep"])
-                    st.dataframe(sweep_df.style.format({
-                        "threshold": "{:.2f}",
-                        "answerable_retention": "{:.1%}",
-                        "abstention_accuracy": "{:.1%}",
-                        "calibration_f1": "{:.3f}"
-                    }), use_container_width=True)
-                    st.success(f"**Calibrated Optimal Threshold:** `{metrics_data.get('calibrated_threshold', 0.28):.2f}`")
+            r_col1, r_col2, r_col3, r_col4, r_col5 = st.columns(5)
+            r_col1.metric("TF-IDF Recall@1", f"{tf_data.get('recall_at_1', 0)*100:.1f}%")
+            r_col2.metric("MiniLM Recall@1", f"{sem_data.get('recall_at_1', 0)*100:.1f}%")
+            r_col3.metric("MiniLM Recall@3", f"{sem_data.get('recall_at_3', 0)*100:.1f}%")
+            r_col4.metric("MiniLM MRR", f"{sem_data.get('mrr', 0):.3f}")
+            r_col5.metric("Adaptive Context Coverage", f"{adapt_data.get('evidence_coverage', 0)*100:.1f}%")
 
             st.markdown("---")
-            st.markdown("### 🔍 Real Failure Analysis & Taxonomy")
-            st.markdown("""
-            1. **The Lexical Gap in Keyword Search (TF-IDF Failure):**
-               - *Query:* `"What framework powers the backend application?"`
-               - *Baseline (TF-IDF):* Failed ($Recall@1=0$) because documentation used terms *"Spring Boot 3.2 built on Java 17"* rather than repeating *"framework"*.
-               - *MiniLM Semantic:* Succeeded ($Recall@1=1$) by embedding conceptual semantics.
-            2. **Multi-Hop Architectural Reasoning (Generator Boundary):**
-               - *Query:* `"If port 8080 is blocked by a firewall, what frontend features will fail?"`
-               - *Limitation:* The retriever locates backend port and frontend API base URL chunks, but small local language models struggle to deduce indirect multi-step cascading failures without chain-of-thought prompting.
-            3. **Out-of-Domain Inquiries (Abstention Gating):**
-               - *Query:* `"What is the developer's favorite programming language?"` or `"What is the monthly AWS cloud hosting budget?"`
-               - *Result:* Similarity score ($\sim 0.20$) falls below the calibrated 0.28 threshold. The system enters **Abstention Mode**, returning: *"The documentation does not provide enough information to answer this question."*
-            """)
+            st.markdown("### 2. Answerability & Abstention Classification (N=20 Questions)")
+            st.caption("Evaluating system capacity to accept answerable questions and reject out-of-domain questions.")
+            cm = m_data.get("abstention_classification", {})
+
+            c_c1, c_c2, c_c3, c_c4, c_c5 = st.columns(5)
+            c_c1.metric("True Positives (TP)", f"{cm.get('tp', 0)} / 12")
+            c_c2.metric("True Negatives (TN)", f"{cm.get('tn', 0)} / 8")
+            c_c3.metric("Answerability Precision", f"{cm.get('precision', 0)*100:.1f}%")
+            c_c4.metric("Abstention Specificity", f"{cm.get('specificity', 0)*100:.1f}%")
+            c_c5.metric("Balanced Accuracy", f"{cm.get('balanced_accuracy', 0)*100:.1f}%")
+
+            st.markdown("---")
+            p_left, p_right = st.columns(2)
+
+            with p_left:
+                st.markdown("#### Retrieval Ranking Comparison")
+                if plot_retrieval.exists():
+                    st.image(str(plot_retrieval), use_container_width=True)
+
+            with p_right:
+                st.markdown("#### Abstention Decision Confusion Matrix")
+                if plot_cm.exists():
+                    st.image(str(plot_cm), use_container_width=True)
+
+            st.markdown("---")
+            st.markdown("### 3. Model Startup Time vs Warm Query Latency")
+            su = m_data.get("model_startup_ms", {})
+            st.write(f"- **Document Loading & Chunking:** `{su.get('doc_processing', 0):.2f} ms`")
+            st.write(f"- **TF-IDF Index Construction:** `{su.get('tfidf_indexing', 0):.2f} ms`")
+            st.write(f"- **MiniLM Embedding Generation:** `{su.get('minilm_embedding', 0):.2f} ms`")
+            st.write(f"- **FLAN-T5 Model Loading:** `{su.get('flan_t5_loading', 0):.2f} ms`")
+            st.write(f"- **Mean Warm Latencies:** TF-IDF: `{tf_data.get('mean_latency_ms', 0):.2f} ms` | MiniLM: `{sem_data.get('mean_latency_ms', 0):.2f} ms` | Adaptive RAG: `{adapt_data.get('mean_latency_ms', 0):.2f} ms`")
+
+            st.markdown("---")
+            st.markdown("### 4. Empirical Threshold Calibration Sweep (Development Set)")
+            if "calibration_sweep" in m_data:
+                sweep_df = pd.DataFrame(m_data["calibration_sweep"])
+                st.dataframe(sweep_df.style.format({
+                    "threshold": "{:.2f}",
+                    "precision": "{:.1%}",
+                    "recall": "{:.1%}",
+                    "specificity": "{:.1%}",
+                    "balanced_accuracy": "{:.1%}",
+                    "f1_score": "{:.3f}"
+                }), use_container_width=True)
+                st.success(f"**Optimal Calibrated Cutoff Selected:** `{m_data.get('calibrated_threshold', 0.31):.2f}`")
 
             if table_file.exists():
-                with st.expander("📄 View Complete Granular Evaluation Predictions Table (CSV)"):
-                    df_res = pd.read_csv(table_file)
-                    st.dataframe(df_res, use_container_width=True)
+                with st.expander("📄 View Detailed Per-Query Predictions Table (CSV)"):
+                    df_preds = pd.read_csv(table_file)
+                    st.dataframe(df_preds, use_container_width=True)
         else:
-            st.info("Evaluation metrics not found. Run `python evaluation/evaluate.py` to populate.")
+            st.info("Evaluation results file not found. Run `python evaluation/evaluate.py` to generate.")
 
 
 if __name__ == "__main__":

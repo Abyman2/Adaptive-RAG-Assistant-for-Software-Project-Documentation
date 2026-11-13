@@ -1,0 +1,130 @@
+{
+  "version": "2.0-dev",
+  "document": "sample_docs/sample_project.md",
+  "chunk_config": {
+    "chunk_size": 100,
+    "overlap": 25
+  },
+  "questions": [
+    {
+      "id": "dev_01",
+      "category": "direct_technical",
+      "question": "Which database does UniServe use for persistent storage?",
+      "answerable": true,
+      "gold_chunk_ids": [1, 6],
+      "gold_sections": ["## 2. Technology Stack & Frameworks", "## 6. Database Architecture and Schema Migrations"],
+      "gold_evidence_snippets": ["PostgreSQL 15"],
+      "reference_answer": "PostgreSQL 15 serves as the relational database."
+    },
+    {
+      "id": "dev_02",
+      "category": "direct_technical",
+      "question": "What framework and runtime powers the backend service?",
+      "answerable": true,
+      "gold_chunk_ids": [0, 1],
+      "gold_sections": ["## 2. Technology Stack & Frameworks"],
+      "gold_evidence_snippets": ["Spring Boot 3.2", "Java 17 LTS"],
+      "reference_answer": "Spring Boot 3.2 built on Java 17 LTS runtime."
+    },
+    {
+      "id": "dev_03",
+      "category": "direct_technical",
+      "question": "Which local port is allocated for the frontend Vite server?",
+      "answerable": true,
+      "gold_chunk_ids": [2],
+      "gold_sections": ["## 3. Frontend Architecture and Client Configuration"],
+      "gold_evidence_snippets": ["5173", "localhost:5173"],
+      "reference_answer": "Port 5173 (http://localhost:5173)."
+    },
+    {
+      "id": "dev_04",
+      "category": "lexical_gap",
+      "question": "How are database schema changes executed manually from the terminal?",
+      "answerable": true,
+      "gold_chunk_ids": [6],
+      "gold_sections": ["## 6. Database Architecture and Schema Migrations"],
+      "gold_evidence_snippets": ["./mvnw flyway:migrate"],
+      "reference_answer": "Run the command ./mvnw flyway:migrate."
+    },
+    {
+      "id": "dev_05",
+      "category": "lexical_gap",
+      "question": "Which filter intercepts requests to validate cryptographic tokens?",
+      "answerable": true,
+      "gold_chunk_ids": [5],
+      "gold_sections": ["## 5. Security, Authentication, and Access Control"],
+      "gold_evidence_snippets": ["JwtAuthenticationFilter"],
+      "reference_answer": "JwtAuthenticationFilter intercepts requests to validate Bearer tokens."
+    },
+    {
+      "id": "dev_06",
+      "category": "architectural",
+      "question": "What connection pool manager is configured and what is its maximum pool size?",
+      "answerable": true,
+      "gold_chunk_ids": [6, 7],
+      "gold_sections": ["## 6. Database Architecture and Schema Migrations"],
+      "gold_evidence_snippets": ["HikariCP", "maximum pool size of 20"],
+      "reference_answer": "HikariCP with a default maximum pool size of 20 connections."
+    },
+    {
+      "id": "dev_07",
+      "category": "architectural",
+      "question": "Which controller handles direct real-time communication between customers and providers?",
+      "answerable": true,
+      "gold_chunk_ids": [7],
+      "gold_sections": ["## 7. Event-Driven Messaging and Real-Time Communication"],
+      "gold_evidence_snippets": ["MessageController"],
+      "reference_answer": "MessageController coordinates communication between customers and providers."
+    },
+    {
+      "id": "dev_08",
+      "category": "direct_technical",
+      "question": "What are the token expiration lifetimes for access and refresh tokens?",
+      "answerable": true,
+      "gold_chunk_ids": [4, 5],
+      "gold_sections": ["## 5. Security, Authentication, and Access Control"],
+      "gold_evidence_snippets": ["60-minute expiry", "7 days"],
+      "reference_answer": "Access tokens expire in 60 minutes, refresh tokens in 7 days."
+    },
+    {
+      "id": "dev_09",
+      "category": "unanswerable",
+      "question": "What is the developer's favorite programming language?",
+      "answerable": false,
+      "gold_chunk_ids": [],
+      "gold_sections": [],
+      "gold_evidence_snippets": [],
+      "reference_answer": "The documentation does not provide enough information."
+    },
+    {
+      "id": "dev_10",
+      "category": "unanswerable",
+      "question": "What is the monthly AWS cloud hosting budget allocation?",
+      "answerable": false,
+      "gold_chunk_ids": [],
+      "gold_sections": [],
+      "gold_evidence_snippets": [],
+      "reference_answer": "The documentation does not provide enough information."
+    },
+    {
+      "id": "dev_11",
+      "category": "unanswerable",
+      "question": "What Stripe private webhook secret is used for billing?",
+      "answerable": false,
+      "gold_chunk_ids": [],
+      "gold_sections": [],
+      "gold_evidence_snippets": [],
+      "reference_answer": "The documentation does not provide enough information."
+    },
+    {
+      "id": "dev_12",
+      "category": "unanswerable",
+      "question": "How do you configure Google OAuth2 social login credentials?",
+      "answerable": false,
+      "gold_chunk_ids": [],
+      "gold_sections": [],
+      "gold_evidence_snippets": [],
+      "reference_answer": "The documentation does not provide enough information."
+    }
+  ]
+}

@@ -1,6 +1,10 @@
 # Adaptive RAG Assistant for Software Project Documentation
 
-> **A Transformer-Powered Software Engineering Assistant with Dynamic Context Adaptation, Semantic Grounding, and Hallucination Abstention.**
+![Project Architecture](cover.png)
+
+## Overview
+
+The **Adaptive RAG Assistant** is a Transformer-powered software engineering assistant designed to help developers navigate software documentation and codebase specifications. It indexes project documents (Markdown, PDF, Word, and source code) and compares traditional lexical keyword retrieval against dense pretrained Transformer semantic retrieval (`sentence-transformers/all-MiniLM-L6-v2`), using a confidence-calibrated adaptive strategy to dynamically adjust retrieval depth and abstain when documentation is insufficient.
 
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -12,7 +16,7 @@
 ## 👥 Project Team Members
 | Full Name | Student ID | Core Responsibilities |
 | :--- | :--- | :--- |
-| **Abel Seleshe** | **ATE/6743/14** | Architecture lead, SentenceTransformer MiniLM pipeline, and adaptive threshold calibration |
+| **Abel Seleshe** | **ATE/6743/14** | Architecture lead, SentenceTransformer MiniLM pipeline, and empirical threshold calibration |
 | **Baheran Tesfaye** | **ATE/5750/14** | TF-IDF baseline implementation, metric calculation (Recall@K, MRR), and held-out dataset creation |
 | **Nebiyu Yohannes** | **ATE/3973/14** | Streamlit 4-section user interface (Project Manager, Assistant, Comparison, Dashboard) |
 | **Wondesen Teshale** | **ATE/4671/14** | Grounded FLAN-T5 generation, automated Pytest suite, and empirical failure analysis |
@@ -25,8 +29,8 @@
 - **Contents:**
   1. Motivation & Real SE Problem (Developer onboarding, doc navigation, lexical gap).
   2. Live Demonstration of 4 UI Sections (Project Ingestion, AI Assistant, Side-by-Side Comparison, Dashboard).
-  3. One Success Demonstration (MiniLM semantic match bridging lexical gaps where TF-IDF fails).
-  4. One Failure Analysis Demonstration (Empirical abstention on out-of-domain query & generator reasoning limits).
+  3. One Success Demonstration (Adaptive dynamic Top-K context selection and grounded answer generation).
+  4. One Failure Analysis Demonstration (Near-threshold false positive and generator synthesis limits).
   5. Contributions by each team member.
 
 ---
@@ -34,17 +38,17 @@
 ## 1. Problem Framing (20% Rubric Criterion)
 
 ### Real Problem & Real User
-Software developers frequently waste hours navigating expansive, fragmented software project documentation—spread across READMEs, architectural markdown files, API specifications, and code comments. Standard search tools suffer from:
-1. **The Lexical Gap:** Keyword search (e.g., standard grep or BM25/TF-IDF) fails when a developer queries *"What framework powers the backend application?"* but the document says *"Spring Boot 3.2 built on Java 17"*.
-2. **Context Overload vs. Starvation:** Fixed-window retrieval systems retrieve a static $K$ chunks (e.g., $K=5$). For pinpoint factual queries (e.g., *"Which port does the frontend use?"*), retrieving 5 large chunks introduces irrelevant distractors that cause small language models to lose focus. For broad architectural queries, static $K$ misses critical peripheral context.
-3. **Hallucination in Software Engineering:** In mission-critical software development, guessing is catastrophic. If an engineering assistant does not find documentation on an API endpoint, it must **abstain** rather than synthesize plausible-looking configurations or credentials.
+Software developers frequently lose productive hours navigating expansive, fragmented software project documentation—spread across READMEs, architectural markdown files, API specifications, and code comments. Standard search tools suffer from:
+1. **The Lexical Gap:** Keyword search (e.g., standard grep or BM25/TF-IDF) fails when a developer queries with synonyms or conceptual phrasing that does not match the exact documentation tokens.
+2. **Context Overload vs. Starvation:** Fixed-window retrieval systems retrieve a static $K$ chunks (e.g., $K=5$). For pinpoint factual queries, retrieving 5 large chunks introduces irrelevant distractors that cause small language models to lose focus. For broad architectural queries, static $K$ misses critical peripheral context.
+3. **Hallucination in Software Engineering:** In mission-critical software development, guessing is unacceptable. If an engineering assistant does not find documentation on an API endpoint, it must **abstain** rather than synthesize plausible-looking configurations or credentials.
 
 ### Why Adaptive RAG?
 Adaptive RAG dynamically calibrates retrieval depth and abstention gating based on semantic confidence scores:
-- **Focused Mode ($Top-1 \ge 0.55$):** Pinpoint queries retrieve the top 3 chunks, maximizing precision and minimizing prompt noise.
-- **Expanded Mode ($0.35 \le Top-1 < 0.55$):** Moderate-confidence or broader questions expand to top 6 chunks.
-- **Broad Search Mode ($0.28 \le Top-1 < 0.35$):** Maximizes recall up to 8 chunks.
-- **Abstention Gating ($Top-1 < 0.28$):** Formally rejects out-of-domain or undocumented queries (*"The documentation does not provide enough information"*), eliminating hallucinations.
+- **Focused Mode ($Top-1 \ge 0.55$):** Pinpoint queries retrieve top-3 chunks, maximizing precision and minimizing prompt noise.
+- **Expanded Mode ($0.35 \le Top-1 < 0.55$):** Moderate-confidence or broader questions expand to top-6 chunks.
+- **Broad Search Mode ($0.31 \le Top-1 < 0.35$):** Maximizes recall up to top-8 chunks.
+- **Abstention Gating ($Top-1 < 0.31$):** Flags unanswerable or undocumented queries (*"The documentation does not provide enough information"*), actively mitigating hallucination risk.
 
 ---
 
@@ -57,25 +61,25 @@ flowchart TD
     Chunker --> Indexer[Dense Vector & TF-IDF Indexing]
     
     Query[Developer Technical Question] --> DenseRetriever[SentenceTransformer: all-MiniLM-L6-v2]
-    DenseRetriever --> ConfCheck{Confidence Score Assessment}
+    DenseRetriever --> ConfCheck{Calibrated Confidence Assessment}
     
     ConfCheck -->|Score >= 0.55| Focused[Focused Mode: Top 3 Chunks]
     ConfCheck -->|0.35 <= Score < 0.55| Expanded[Expanded Mode: Top 6 Chunks]
-    ConfCheck -->|0.28 <= Score < 0.35| Broad[Broad Mode: Top 8 Chunks]
-    ConfCheck -->|Score < 0.28| Abstain[Abstention: Insufficient Evidence Flag]
+    ConfCheck -->|0.31 <= Score < 0.35| Broad[Broad Mode: Top 8 Chunks]
+    ConfCheck -->|Score < 0.31| Abstain[Abstention: Insufficient Evidence Flag]
     
     Focused --> Generator[Seq2Seq LM: google/flan-t5-small]
     Expanded --> Generator
     Broad --> Generator
-    Abstain --> DirectReject[Abstain Response: Zero Hallucination]
+    Abstain --> DirectReject[Abstain Response: Minimal Hallucination]
     
     Generator --> Output[Grounded Answer + Citations + Confidence Badge]
 ```
 
-### Transformer & Baseline Components
+### Components
 1. **Pretrained Semantic Embedder:** `sentence-transformers/all-MiniLM-L6-v2` (22.7M parameters, 384-dimensional dense semantic representations). Maps queries and documentation into a shared metric space where cosine similarity represents semantic equivalence.
-2. **Grounded Generator:** `google/flan-t5-small` (77M parameters, instruction-tuned seq2seq model). Conditioned strictly on retrieved documentation chunks with explicit prompts prohibiting extraneous speculation.
-3. **Non-Transformer Baseline:** `TfidfVectorizer` with sublinear TF scaling, English stop-word filtering, and cosine similarity.
+2. **Grounded Generator:** `google/flan-t5-small` (77M parameters, instruction-tuned seq2seq model). Conditioned strictly on retrieved documentation chunks with explicit prompt constraints forbidding hallucination.
+3. **Non-Transformer Baseline:** `TfidfVectorizer` with sublinear term-frequency scaling, English stop-word filtering, and cosine similarity. Chunks with zero term overlap are explicitly flagged as non-matches.
 
 ---
 
@@ -87,54 +91,111 @@ Our architecture builds on and references:
 
 ---
 
-## 4. Evaluation & Experimental Results (25% Rubric Criterion)
+## 4. Empirical Evaluation & Benchmark Results (25% Rubric Criterion)
 
-### Empirical Threshold Calibration (Development Set)
-We swept candidate abstention thresholds across the Development Set ($N=12$) to balance true positive retention against hallucination prevention:
+### Experimental Protocol
+- **Document Under Test:** UniServe Software Project Specification (10 modular chunks, 705 words).
+- **Development Set ($N=12$):** 8 answerable and 4 unanswerable questions used exclusively for threshold calibration and prompt debugging.
+- **Held-Out Test Set ($N=20$):** 12 answerable (4 direct technical, 4 lexical gap, 4 architectural) and 8 unanswerable questions, **strictly frozen** prior to evaluation.
+- **Relevance Criterion:** Strict ground truth checking requiring retrieved chunks to match verified gold chunk IDs and contain gold evidence snippets.
 
-| Candidate Cutoff | Answerable Retention | Abstention Accuracy | Calibration F1 |
-| :---: | :---: | :---: | :---: |
-| 0.22 | 100.0% | 50.0% | 0.667 |
-| **0.28 (Selected)** | **100.0%** | **100.0%** | **1.000** |
-| 0.34 | 100.0% | 100.0% | 1.000 |
+### A. Model Startup vs Warm Query Latency
+- **Document Loading & Chunking:** `1.33 ms`
+- **TF-IDF Index Construction:** `39.08 ms`
+- **MiniLM Dense Embedding Generation:** `7,333.60 ms` (one-time index startup)
+- **FLAN-T5 Model Loading:** `1,083.52 ms`
 
-*Chosen threshold: **0.28**, providing maximum discrimination without prematurely rejecting lower-confidence answerable queries.*
+### B. Empirical Threshold Calibration (Development Set N=12)
+Candidate abstention thresholds were swept on the Development Set to find the optimal cutoff for binary answerability classification:
 
-### Held-Out Evaluation Results Table (N=8 Unseen Queries)
+| Candidate Threshold | TP | TN | FP | FN | Precision | Recall | Specificity | Balanced Accuracy | Classification $F_1$ |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 0.22 | 8 | 2 | 2 | 0 | 80.0% | 100.0% | 50.0% | 75.0% | 0.889 |
+| 0.25 | 8 | 2 | 2 | 0 | 80.0% | 100.0% | 50.0% | 75.0% | 0.889 |
+| 0.28 | 8 | 3 | 1 | 0 | 88.9% | 100.0% | 75.0% | 87.5% | 0.941 |
+| **0.31 (Selected)** | **8** | **4** | **0** | **0** | **100.0%** | **100.0%** | **100.0%** | **100.0%** | **1.000** |
+| 0.34 | 8 | 4 | 0 | 0 | 100.0% | 100.0% | 100.0% | 100.0% | 1.000 |
 
-| Method / System | Recall@1 | Recall@3 | Recall@5 | MRR | Abstention Acc | Mean Latency |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Baseline (TF-IDF Keyword)** | 100.0% | 100.0% | 100.0% | 1.000 | 0.0% *(Forces match)* | **~6.2 ms** |
-| **MiniLM-L6-v2 (Static Top-5)** | **100.0%** | **100.0%** | **100.0%** | **1.000** | 0.0% *(No gating)* | ~77.2 ms |
-| **Adaptive MiniLM (Proposed)** | **100.0%** | **100.0%** | **100.0%** | **1.000** | **100.0% (Zero Hallucination)** | ~177.2 ms |
+*Selected Threshold: **0.31**, frozen before evaluating the held-out test suite.*
 
-![Retrieval Comparison](evaluation/results/retrieval_comparison.png)
+### C. Retrieval Ranking Performance (Answerable Queries N=12)
+
+| Metric | TF-IDF Baseline | MiniLM Semantic (Static K=5) | Adaptive RAG (Dynamic K) |
+| :--- | :---: | :---: | :---: |
+| **Recall@1** | **100.0%** | 66.7% | 66.7% |
+| **Recall@3** | **100.0%** | **100.0%** | **100.0%** |
+| **Recall@5** | **100.0%** | **100.0%** | **100.0%** |
+| **MRR** | **1.000** | 0.819 | 0.819 |
+| **Evidence Context Coverage** | — | — | **100.0%** |
+| **Mean Query Latency** | **3.59 ms** | 19.75 ms | 35.07 ms |
+| **Median Query Latency** | **2.93 ms** | 17.57 ms | 34.03 ms |
+
+> **Scientific Finding:** On this clean 10-chunk modular corpus, TF-IDF achieves 100% Recall@1 because distinct section tokens (e.g. `npm run dev`, `JwtAuthenticationFilter`, `PostgreSQL 15`) give exact lexical matches. MiniLM achieves 100% Recall@3 and Recall@5, but for 4 questions ranks a closely related overview chunk at Rank 1, resulting in Recall@1 of 66.7%. Adaptive RAG shares MiniLM's ranking while dynamically selecting context depth.
+
+### D. Answerability & Abstention Classification (Held-Out N=20)
+
+| Metric | Value | Meaning |
+| :--- | :---: | :--- |
+| **True Positives (TP)** | 11 / 12 | Answerable questions correctly accepted |
+| **True Negatives (TN)** | 5 / 8 | Unanswerable questions correctly rejected |
+| **False Positives (FP)** | 3 / 8 | Unanswerable questions falsely accepted (Near-threshold hazard) |
+| **False Negatives (FN)** | 1 / 12 | Answerable questions falsely rejected |
+| **Answerability Precision** | **78.6%** | Accuracy of accepted questions |
+| **Answerability Recall** | **91.7%** | Coverage of answerable questions |
+| **Abstention Specificity** | **62.5%** | Rate of correctly rejecting unanswerable queries |
+| **Balanced Accuracy** | **77.1%** | Macro average of Recall and Specificity |
+| **Classification $F_1$** | **0.846** | Harmonic mean of Precision and Recall |
+
+> **Crucial Distinction:** The non-Transformer TF-IDF baseline has **0.0% Abstention Specificity** because it possesses no confidence thresholding and forces a match for every unanswerable query. The Adaptive RAG engine successfully rejects 62.5% of out-of-domain questions while maintaining 91.7% answerable recall.
+
+### E. Dynamic Context Window Allocation
+- **Focused Mode ($K=3$):** 2 queries (10.0%) — Saves prompt context and minimizes distractor noise.
+- **Expanded Mode ($K=6$):** 10 queries (50.0%) — Balances depth and coverage.
+- **Broad Mode ($K=8$):** 8 queries (40.0%) — Ensures high recall for complex queries.
 
 ---
 
-## 5. Failure Analysis (Assignment Requirement 5)
+## 5. Visualizations
 
-An honest analysis of failure modes discovered during stress-testing:
-
-### Failure Mode 1: Lexical Mismatch & Acronym Ambiguity (TF-IDF Failure)
-- **Query:** *"What framework powers the backend application?"*
-- **Baseline (TF-IDF):** Fails ($Recall@1 = 0$) because documentation used the phrasing *"Spring Boot 3.2 built on Java 17"* rather than repeating the word *"framework"*.
-- **Transformer MiniLM:** Correctly identified the semantic relation between *"framework powers"* and *"Spring Boot 3.2 built on Java 17"*.
-
-### Failure Mode 2: Multi-Hop Architectural Dependencies (Generator Limitation)
-- **Query:** *"If port 8080 is blocked by a firewall, what frontend features will fail?"*
-- **Symptom:** The retriever locates the sections stating backend listens on port 8080 and frontend routes requests via `localhost:8080/api/v1`. However, small generative models (`flan-t5-small`) struggle to deduce indirect multi-step cascading failures without chain-of-thought prompting.
-- **Root Cause:** Parameter capacity constraint of 77M-parameter model on multi-step reasoning.
-- **Remedy:** Provided chunk evidence is displayed directly in the UI so developers can review raw documentation alongside the synthesized summary.
-
-### Failure Mode 3: Out-of-Domain Inquiries (Abstention Succeeded)
-- **Query:** *"What Stripe API secret key is used for payment processing?"* or *"What is the developer's favorite programming language?"*
-- **Baseline Behavior:** TF-IDF matched words like *"payments"* and returned unrelated overview text, causing a naive generator to hallucinate details.
-- **Adaptive System Behavior:** Top-1 similarity scored **0.20** (below the calibrated 0.28 threshold). The system entered **Abstention Mode**, correctly outputting: *"The documentation does not provide enough information to answer this question."*
+| Retrieval Ranking Comparison | Abstention Confusion Matrix |
+| :---: | :---: |
+| ![Retrieval Ranking](evaluation/results/retrieval_comparison_v2.png) | ![Confusion Matrix](evaluation/results/abstention_confusion_matrix.png) |
 
 ---
 
-## 6. User Interface Walkthrough (Streamlit App)
+## 6. Failure Analysis (Assignment Requirement 5)
+
+### Failure Case 1: Overlapping Topic Distribution (Semantic Granularity Limit)
+- **Query (`held_01`):** *"What terminal command launches the client-side user interface in development mode?"*
+- **Outcome:** TF-IDF placed Chunk 2 (`Frontend Architecture`) at Rank 1. MiniLM placed Chunk 1 (`Technology Stack overview`) at Rank 1 (score 0.44) and Chunk 2 at Rank 2 (score 0.42).
+- **Reason:** MiniLM dense embeddings capture broad topical overlap ("React 18 frontend single-page application"), which was present in both Chunk 1 and Chunk 2. Because both chunks discuss frontend technology, MiniLM scored Chunk 1 slightly higher.
+- **Remedy:** Adaptive retrieval expanded context to top-6 chunks, ensuring the target chunk was delivered to the generator.
+
+### Failure Case 2: Near-Threshold False Positive (Unanswerable Query)
+- **Query (`held_20`):** *"What Confluent Kafka Schema Registry URL is used for Avro message schema validation?"*
+- **Outcome:** The question is unanswerable from the documentation. However, the query similarity scored **0.322**, barely exceeding the 0.31 calibrated cutoff, causing a False Positive ($FP$).
+- **Reason:** Dense semantic embedding of "Kafka message schema validation" matched Chunk 7 ("Apache Kafka distributed broker, domain events").
+- **Remedy:** Secondary semantic cross-encoder reranking or requiring minimum score margin across top-2 chunks before acceptance.
+
+### Failure Case 3: Small-Model Generative Synthesis Constraints
+- **Query (`held_04`):** *"What distinct access privilege tiers are enforced in the role-based security system?"*
+- **Outcome:** The retriever located Chunk 5 containing `ROLE_CUSTOMER`, `ROLE_PROVIDER`, and `ROLE_ADMIN`. However, `flan-t5-small` produced a concise phrase rather than an exhaustive breakdown of each role's permissions.
+- **Reason:** 77M-parameter model parameter capacity limit on multi-sentence synthesis.
+
+---
+
+## 7. Scope & Limitations
+
+1. **Synthetic Sample vs. Production Codebase:**
+   This benchmark evaluates a clean, 10-chunk modular reference documentation file (`UniServe`). In large enterprise repositories with 10,000+ files, lexical collisions increase significantly, giving dense semantic search greater advantages over keyword search.
+2. **Abstention Gating vs. Zero Hallucination:**
+   The calibrated threshold achieves 62.5% abstention specificity on unanswerable queries. While it significantly reduces hallucinations compared to static baselines, it does not completely eliminate near-threshold false acceptances.
+3. **Local CPU Execution:**
+   All models run locally on CPU without paid APIs. Generative answers prioritize grounding and citation over conversational fluency.
+
+---
+
+## 8. User Interface Walkthrough (Streamlit App)
 
 The application (`app.py`) is structured into four distinct views:
 1. **📂 Project Manager:** Ingest local project directories (automatically ignoring `.git`, `.venv`, `node_modules`, etc.), upload project files, or one-click load the pre-configured UniServe documentation.
@@ -144,7 +205,7 @@ The application (`app.py`) is structured into four distinct views:
 
 ---
 
-## 7. Quickstart & How to Run (Engineering Quality)
+## 9. Quickstart & How to Run (Engineering Quality)
 
 ### Prerequisites
 - Python 3.11 (64-bit)
@@ -174,13 +235,13 @@ pip install -r requirements.txt
 ```bash
 pytest -v
 ```
-*Expected: All 8 unit and pipeline tests pass.*
+*Expected: All 11 unit and pipeline tests pass.*
 
 ### 4. Run Benchmark & Calibration
 ```bash
 python evaluation/evaluate.py
 ```
-*Generates calibration logs, `comparison_table.csv`, `evaluation_metrics.json`, and `retrieval_comparison.png`.*
+*Generates calibration logs, `comparison_table_v2.csv`, `evaluation_metrics_v2.json`, and visualization plots.*
 
 ### 5. Launch the Web Application
 ```bash
@@ -190,41 +251,45 @@ streamlit run app.py
 
 ---
 
-## 8. Project Structure
+## 10. Project Structure
 
 ```
 Adaptive-RAG-Assistant-for-Software-Project-Documentation/
-├── app.py                     # Streamlit application with 4 distinct views
-├── requirements.txt           # Verified dependencies
-├── pytest.ini                 # Pytest configuration
-├── README.md                  # Comprehensive documentation & report
-├── .gitignore                 # Excludes .venv, cache files, skills.md, progress.md
+├── app.py                         # Streamlit application with 4 distinct views
+├── cover.png                      # Project architecture overview banner
+├── requirements.txt               # Verified dependencies
+├── pytest.ini                     # Pytest configuration
+├── README.md                      # Comprehensive documentation & report
+├── .gitignore                     # Excludes .venv, cache files, skills.md, progress.md
 ├── src/
 │   ├── __init__.py
-│   ├── document_loader.py     # Multi-format parser with folder ignore rules
-│   ├── chunker.py             # Overlapping sliding window chunking
-│   ├── retriever.py           # Pretrained all-MiniLM-L6-v2 semantic search (384d)
-│   ├── adaptive_retrieval.py  # Confidence calibration & dynamic Top-K
-│   ├── generator.py           # Grounded google/flan-t5-small generator
-│   └── baseline.py            # Non-Transformer TF-IDF baseline
+│   ├── document_loader.py         # Multi-format parser with folder ignore rules
+│   ├── chunker.py                 # Overlapping sliding window chunking
+│   ├── retriever.py               # Pretrained all-MiniLM-L6-v2 semantic search (384d)
+│   ├── adaptive_retrieval.py      # Confidence calibration & dynamic Top-K
+│   ├── generator.py               # Grounded google/flan-t5-small generator
+│   └── baseline.py                # Non-Transformer TF-IDF baseline (zero-score handled)
 ├── evaluation/
-│   ├── dataset.json           # Labeled Dev (12) and Held-out (8) test sets
-│   ├── evaluate.py            # Automated calibration & benchmarking script
-│   └── results/               # Generated metrics, plots, and CSV tables
+│   ├── dataset.json               # Historical V1 evaluation set
+│   ├── dev_v2.json                # Development calibration set (N=12)
+│   ├── held_out_v2.json           # Frozen held-out test set (N=20)
+│   ├── validate_gold_labels.py    # Ground truth validation script
+│   ├── evaluate.py                # Automated calibration & benchmarking script (V2)
+│   └── results/                   # Generated metrics, plots, and CSV tables
 ├── tests/
-│   ├── test_pipeline.py       # Core pipeline unit tests & directory filtering
-│   └── test_retriever.py      # Semantic & baseline integration tests
+│   ├── test_pipeline.py           # Core pipeline unit tests, edge cases & integrity
+│   └── test_retriever.py          # Semantic & baseline integration tests
 └── sample_docs/
-    └── sample_project.md      # Full UniServe software architecture documentation
+    └── sample_project.md          # Full UniServe software architecture documentation
 ```
 
 ---
 
-## 9. Grading Rubric Compliance Checklist
+## 11. Grading Rubric Compliance Checklist
 - [x] **1. Real Problem:** Real software documentation search & Q&A assistant for developers.
 - [x] **2. Pretrained Transformer:** `all-MiniLM-L6-v2` semantic embeddings + `flan-t5-small` local generator.
-- [x] **3. Simple Baseline:** TF-IDF keyword vectorizer with cosine similarity.
-- [x] **4. Held-out Evaluation:** 8 unseen questions, Recall@1/3/5, MRR, latency, and abstention accuracy.
+- [x] **3. Simple Baseline:** TF-IDF keyword vectorizer with explicit zero-overlap handling.
+- [x] **4. Held-out Evaluation:** 20 unseen questions, separate retrieval ranking and abstention classification.
 - [x] **5. Failure Analysis:** 3 distinct failure modes analyzed with examples and causal root causes.
 - [x] **6. Engineering Quality:** Clean modular codebase, requirements.txt, 100% passing tests via `pytest -v`, run from README.
 - [x] **7. Team Contribution:** Every member listed with student ID and distinct project responsibilities.

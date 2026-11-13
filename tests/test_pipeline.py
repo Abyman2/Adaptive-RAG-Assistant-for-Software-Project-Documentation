@@ -1,7 +1,10 @@
 """Unit and pipeline tests for Adaptive RAG Assistant components.
-Tests chunking, document loading, TF-IDF baseline, and adaptive retrieval logic.
+Tests chunking, document loading, TF-IDF baseline, directory filtering,
+zero-match edge cases, generator abstention, and gold label dataset integrity.
 """
 
+import json
+from pathlib import Path
 import pytest
 from src.chunker import chunk_document, process_documents
 from src.document_loader import load_document, SUPPORTED_EXTENSIONS
@@ -53,14 +56,10 @@ def test_directory_filtering(tmp_path):
     """Test that load_directory skips ignored folders like .git, .venv, node_modules."""
     from src.document_loader import load_directory
     
-    # Create valid doc
     (tmp_path / "README.md").write_text("Valid project documentation here.", encoding="utf-8")
-    
-    # Create ignored directories and files
     git_dir = tmp_path / ".git"
     git_dir.mkdir()
     (git_dir / "config.txt").write_text("git config content", encoding="utf-8")
-    
     venv_dir = tmp_path / ".venv"
     venv_dir.mkdir()
     (venv_dir / "lib.py").write_text("venv code", encoding="utf-8")
@@ -96,11 +95,26 @@ def test_tfidf_baseline():
     ]
     baseline.index(chunks)
     
-    # Query for database
     results = baseline.search("PostgreSQL database", top_k=2)
     assert len(results) == 2
     assert results[0]["chunk"]["source"] == "db.md"
     assert results[0]["score"] > 0.0
+    assert results[0]["has_match"] is True
+
+
+def test_tfidf_zero_match():
+    """Test TF-IDF behavior when query words do not exist in corpus."""
+    baseline = TfidfBaseline()
+    chunks = [
+        {"source": "db.md", "text": "PostgreSQL database content.", "chunk_id": 0}
+    ]
+    baseline.index(chunks)
+    
+    # Completely non-matching query
+    results = baseline.search("Quantum Superposition Entanglement", top_k=1)
+    assert len(results) == 1
+    assert results[0]["score"] == 0.0
+    assert results[0]["has_match"] is False
 
 
 def test_adaptive_retrieval_modes():
@@ -129,3 +143,33 @@ def test_adaptive_retrieval_modes():
     assert res_low["mode"] == "broad"
     assert res_low["sufficient_evidence"] is False
 
+
+def test_generator_abstention_logic():
+    """Verify that AnswerGenerator abstains correctly when sufficient_evidence is False."""
+    from src.generator import AnswerGenerator
+    
+    class DummyGenerator(AnswerGenerator):
+        def __init__(self):
+            # Bypass heavy neural loading for unit test
+            pass
+
+    dummy = DummyGenerator()
+    out = dummy.generate("What is the secret key?", [], sufficient_evidence=False)
+    assert "does not provide enough information" in out["answer"]
+    assert out["grounded"] is False
+    assert out["citations"] == []
+
+
+def test_dataset_integrity():
+    """Verify JSON structure and constraints for dev_v2 and held_out_v2."""
+    for p in [Path("evaluation/dev_v2.json"), Path("evaluation/held_out_v2.json")]:
+        assert p.exists()
+        with open(p, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        assert "questions" in data
+        for q in data["questions"]:
+            assert "id" in q
+            assert "category" in q
+            assert "question" in q
+            assert "answerable" in q
+            assert "reference_answer" in q
