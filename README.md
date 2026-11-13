@@ -37,7 +37,7 @@ The **Adaptive RAG Assistant** is a Transformer-powered software engineering ass
 
 ---
 
-## 1. Problem Framing (20% Rubric Criterion)
+## 1. Problem Framing 
 
 ### Real Problem & Real User
 
@@ -58,7 +58,7 @@ Adaptive RAG dynamically calibrates retrieval depth and abstention gating based 
 
 ---
 
-## 2. System Architecture & Method (20% Rubric Criterion)
+## 2. System Architecture & Method 
 
 ```mermaid
 flowchart TD
@@ -99,7 +99,7 @@ Our architecture builds on and references:
 
 ---
 
-## 4. Empirical Evaluation & Benchmark Results (25% Rubric Criterion)
+## 4. Empirical Evaluation & Benchmark Results
 
 ### Experimental Protocol
 
@@ -175,7 +175,7 @@ Candidate abstention thresholds were swept on the Development Set to find the op
 
 ---
 
-## 6. Failure Analysis (Assignment Requirement 5)
+## 6. Failure Analysis
 
 ### Failure Case 1: Overlapping Topic Distribution (Semantic Granularity Limit)
 
@@ -312,12 +312,4 @@ Adaptive-RAG-Assistant-for-Software-Project-Documentation/
 
 ---
 
-## 11. Grading Rubric Compliance Checklist
 
-- [x] **1. Real Problem:** Real software documentation search & Q&A assistant for developers.
-- [x] **2. Pretrained Transformer:** `all-MiniLM-L6-v2` semantic embeddings + `flan-t5-small` local generator.
-- [x] **3. Simple Baseline:** TF-IDF keyword vectorizer with explicit zero-overlap handling.
-- [x] **4. Held-out Evaluation:** 20 unseen questions, separate retrieval ranking and abstention classification.
-- [x] **5. Failure Analysis:** 3 distinct failure modes analyzed with examples and causal root causes.
-- [x] **6. Engineering Quality:** Clean modular codebase, requirements.txt, 100% passing tests via `pytest -v`, run from README.
-- [x] **7. Team Contribution:** Every member listed with student ID and distinct project responsibilities.
