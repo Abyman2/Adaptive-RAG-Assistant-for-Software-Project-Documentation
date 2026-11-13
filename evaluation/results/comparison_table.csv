@@ -1,0 +1,21 @@
+id,dataset,question,answerable,adaptive_mode,adaptive_confidence,adaptive_top_k,adaptive_sufficient_evidence,tfidf_lat_ms,semantic_lat_ms,adaptive_lat_ms,tfidf_r1,tfidf_r3,tfidf_r5,tfidf_mrr,sem_r1,sem_r3,sem_r5,sem_mrr,adaptive_hit,adaptive_correct_abstention
+dev_01,Development,Which database does UniServe use?,True,expanded,0.45718246698379517,6,True,8.275032043457031,86.6551399230957,115.68617820739746,0,1,1,0.5,0,1,1,0.5,1,
+dev_02,Development,What framework powers the backend application?,True,expanded,0.49420422315597534,6,True,0.0,44.790029525756836,138.28492164611816,0,1,1,0.5,1,1,1,1.0,1,
+dev_03,Development,Which port does the frontend run on?,True,expanded,0.4013972878456116,6,True,5.46574592590332,25.673627853393555,146.74949645996094,1,1,1,1.0,1,1,1,1.0,1,
+dev_04,Development,What handles authentication and request filtering?,True,focused,0.559294581413269,3,True,5.8155059814453125,26.23891830444336,150.2385139465332,1,1,1,1.0,1,1,1,1.0,1,
+dev_05,Development,Which tool manages database schema migrations?,True,expanded,0.5209205746650696,6,True,5.0144195556640625,33.601999282836914,194.95701789855957,1,1,1,1.0,1,1,1,1.0,1,
+dev_06,Development,Which controller handles messaging between customers and providers?,True,expanded,0.40088605880737305,6,True,0.0,146.11530303955078,211.35640144348145,1,1,1,1.0,1,1,1,1.0,1,
+dev_07,Development,Where is the staging application deployed?,True,focused,0.6098154783248901,3,True,2.7616024017333984,21.028518676757812,44.02780532836914,1,1,1,1.0,1,1,1,1.0,1,
+dev_08,Development,What is the token expiration duration for access tokens?,True,expanded,0.5115270614624023,6,True,0.0,25.067806243896484,53.07316780090332,1,1,1,1.0,1,1,1,1.0,1,
+dev_09,Development,Which message broker is used for event streaming?,True,expanded,0.5385148525238037,6,True,3.607034683227539,30.248641967773438,54.19611930847168,1,1,1,1.0,1,1,1,1.0,1,
+dev_10,Development,What connection pool library is used for database connections?,True,expanded,0.4696274995803833,6,True,4.214286804199219,26.031494140625,54.409027099609375,1,1,1,1.0,1,1,1,1.0,1,
+dev_11,Development,What is the developer's favorite programming language?,False,broad,0.2020394653081894,8,False,0.0,30.50374984741211,59.78727340698242,0,0,0,0.0,0,0,0,0.0,0,1.0
+dev_12,Development,What is the monthly AWS cloud hosting budget?,False,broad,0.238305002450943,8,False,3.473520278930664,32.20367431640625,64.89396095275879,0,0,0,0.0,0,0,0,0.0,0,1.0
+held_01,Held-out,What command starts the frontend in development mode?,True,expanded,0.4480001926422119,6,True,2.501964569091797,32.04202651977539,100.15344619750977,1,1,1,1.0,1,1,1,1.0,1,
+held_02,Held-out,What endpoint serves Prometheus application metrics?,True,expanded,0.5336841344833374,6,True,15.581607818603516,82.89885520935059,169.3108081817627,1,1,1,1.0,1,1,1,1.0,1,
+held_03,Held-out,How are database schema changes applied manually from the command line?,True,expanded,0.35456687211990356,6,True,4.122257232666016,108.5357666015625,134.85312461853027,1,1,1,1.0,1,1,1,1.0,1,
+held_04,Held-out,What three role-based access control roles are supported?,True,focused,0.6076638698577881,3,True,0.0,105.20076751708984,132.64775276184082,1,1,1,1.0,1,1,1,1.0,1,
+held_05,Held-out,What Kafka topics receive asynchronous order and dispatch events?,True,focused,0.6349820494651794,3,True,4.492521286010742,31.31699562072754,202.3448944091797,1,1,1,1.0,1,1,1,1.0,1,
+held_06,Held-out,What is the base URL configured for frontend API requests?,True,expanded,0.44587060809135437,6,True,4.979372024536133,75.60300827026367,147.40347862243652,1,1,1,1.0,1,1,1,1.0,1,
+held_07,Held-out,What Stripe API secret key is used for payment processing?,False,broad,0.2890864908695221,8,True,9.643077850341797,63.14706802368164,177.69980430603027,0,0,0,0.0,0,0,0,0.0,0,0.0
+held_08,Held-out,How do you configure OAuth2 Google social login?,False,broad,0.2673356533050537,8,False,6.167888641357422,251.34992599487305,187.46185302734375,0,0,0,0.0,0,0,0,0.0,0,1.0

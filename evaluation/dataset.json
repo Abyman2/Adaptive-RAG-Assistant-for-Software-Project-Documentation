@@ -1,0 +1,168 @@
+{
+  "project_name": "UniServe Software Project",
+  "document": "sample_docs/sample_project.md",
+  "development_set": [
+    {
+      "id": "dev_01",
+      "question": "Which database does UniServe use?",
+      "expected_answer": "PostgreSQL 15",
+      "expected_keywords": ["postgresql", "database"],
+      "answerable": true,
+      "source_section": "Database and Migrations"
+    },
+    {
+      "id": "dev_02",
+      "question": "What framework powers the backend application?",
+      "expected_answer": "Spring Boot 3.2 (Java 17)",
+      "expected_keywords": ["spring", "boot"],
+      "answerable": true,
+      "source_section": "Technology Stack & Architecture"
+    },
+    {
+      "id": "dev_03",
+      "question": "Which port does the frontend run on?",
+      "expected_answer": "5173",
+      "expected_keywords": ["5173", "localhost"],
+      "answerable": true,
+      "source_section": "Frontend Architecture"
+    },
+    {
+      "id": "dev_04",
+      "question": "What handles authentication and request filtering?",
+      "expected_answer": "Spring Security with JWT tokens and JwtAuthenticationFilter",
+      "expected_keywords": ["jwt", "spring security", "filter"],
+      "answerable": true,
+      "source_section": "Authentication & Authorization"
+    },
+    {
+      "id": "dev_05",
+      "question": "Which tool manages database schema migrations?",
+      "expected_answer": "Flyway",
+      "expected_keywords": ["flyway", "migration"],
+      "answerable": true,
+      "source_section": "Database and Migrations"
+    },
+    {
+      "id": "dev_06",
+      "question": "Which controller handles messaging between customers and providers?",
+      "expected_answer": "MessageController",
+      "expected_keywords": ["messagecontroller", "messaging"],
+      "answerable": true,
+      "source_section": "Messaging and Event Streaming"
+    },
+    {
+      "id": "dev_07",
+      "question": "Where is the staging application deployed?",
+      "expected_answer": "Railway",
+      "expected_keywords": ["railway", "staging"],
+      "answerable": true,
+      "source_section": "Deployment and CI/CD"
+    },
+    {
+      "id": "dev_08",
+      "question": "What is the token expiration duration for access tokens?",
+      "expected_answer": "60 minutes",
+      "expected_keywords": ["60", "expiry", "minute"],
+      "answerable": true,
+      "source_section": "Authentication & Authorization"
+    },
+    {
+      "id": "dev_09",
+      "question": "Which message broker is used for event streaming?",
+      "expected_answer": "Apache Kafka",
+      "expected_keywords": ["kafka", "broker"],
+      "answerable": true,
+      "source_section": "Messaging and Event Streaming"
+    },
+    {
+      "id": "dev_10",
+      "question": "What connection pool library is used for database connections?",
+      "expected_answer": "HikariCP with a default maximum pool size of 20",
+      "expected_keywords": ["hikaricp", "pool"],
+      "answerable": true,
+      "source_section": "Database and Migrations"
+    },
+    {
+      "id": "dev_11",
+      "question": "What is the developer's favorite programming language?",
+      "expected_answer": "Not documented",
+      "expected_keywords": ["not provide enough information", "not documented"],
+      "answerable": false,
+      "source_section": null
+    },
+    {
+      "id": "dev_12",
+      "question": "What is the monthly AWS cloud hosting budget?",
+      "expected_answer": "Not documented",
+      "expected_keywords": ["not provide enough information", "not documented"],
+      "answerable": false,
+      "source_section": null
+    }
+  ],
+  "held_out_set": [
+    {
+      "id": "held_01",
+      "question": "What command starts the frontend in development mode?",
+      "expected_answer": "npm run dev",
+      "expected_keywords": ["npm run dev"],
+      "answerable": true,
+      "source_section": "Frontend Architecture"
+    },
+    {
+      "id": "held_02",
+      "question": "What endpoint serves Prometheus application metrics?",
+      "expected_answer": "/actuator/prometheus",
+      "expected_keywords": ["actuator", "prometheus"],
+      "answerable": true,
+      "source_section": "Deployment and CI/CD"
+    },
+    {
+      "id": "held_03",
+      "question": "How are database schema changes applied manually from the command line?",
+      "expected_answer": "./mvnw flyway:migrate",
+      "expected_keywords": ["flyway:migrate", "mvnw"],
+      "answerable": true,
+      "source_section": "Database and Migrations"
+    },
+    {
+      "id": "held_04",
+      "question": "What three role-based access control roles are supported?",
+      "expected_answer": "ROLE_CUSTOMER, ROLE_PROVIDER, and ROLE_ADMIN",
+      "expected_keywords": ["role_customer", "role_provider", "role_admin"],
+      "answerable": true,
+      "source_section": "Authentication & Authorization"
+    },
+    {
+      "id": "held_05",
+      "question": "What Kafka topics receive asynchronous order and dispatch events?",
+      "expected_answer": "orders.events, dispatches.events, and notifications.events",
+      "expected_keywords": ["orders.events", "dispatches.events"],
+      "answerable": true,
+      "source_section": "Messaging and Event Streaming"
+    },
+    {
+      "id": "held_06",
+      "question": "What is the base URL configured for frontend API requests?",
+      "expected_answer": "http://localhost:8080/api/v1",
+      "expected_keywords": ["localhost:8080/api/v1"],
+      "answerable": true,
+      "source_section": "Frontend Architecture"
+    },
+    {
+      "id": "held_07",
+      "question": "What Stripe API secret key is used for payment processing?",
+      "expected_answer": "Not documented",
+      "expected_keywords": ["not provide enough information", "not documented"],
+      "answerable": false,
+      "source_section": null
+    },
+    {
+      "id": "held_08",
+      "question": "How do you configure OAuth2 Google social login?",
+      "expected_answer": "Not documented",
+      "expected_keywords": ["not provide enough information", "not documented"],
+      "answerable": false,
+      "source_section": null
+    }
+  ]
+}

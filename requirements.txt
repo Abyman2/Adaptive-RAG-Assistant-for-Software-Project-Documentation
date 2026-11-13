@@ -1,0 +1,11 @@
+sentence-transformers
+transformers
+torch
+numpy
+scikit-learn
+streamlit
+pypdf
+python-docx
+pandas
+matplotlib
+pytest
