@@ -36,6 +36,7 @@ class TfidfBaseline:
             
         Returns:
             list of dict: [{"score": float, "chunk": dict, "rank": int, "has_match": bool}, ...]
+            Returns empty list [] when no lexical keywords match (all scores 0.0).
         """
         if self.matrix is None or not self.chunks:
             raise ValueError("Index documents before searching")
@@ -43,23 +44,22 @@ class TfidfBaseline:
         query_vec = self.vectorizer.transform([query])
         similarities = cosine_similarity(query_vec, self.matrix).flatten()
 
-        # Check if any lexical overlap occurred
-        has_any_match = not np.all(similarities == 0)
+        # Identify chunks with strictly positive similarity
+        matching_indices = np.where(similarities > 0.0)[0]
+        if len(matching_indices) == 0:
+            return []
 
-        if has_any_match:
-            top_indices = np.argsort(similarities)[::-1][:top_k]
-        else:
-            # When no keywords match, scores are 0.0
-            top_indices = np.argsort(similarities)[::-1][:top_k]
+        # Sort only matching chunks by score descending
+        sorted_order = np.argsort(similarities[matching_indices])[::-1][:top_k]
+        top_indices = matching_indices[sorted_order]
 
         results = []
         for rank, idx in enumerate(top_indices):
-            score = float(similarities[idx])
             results.append({
                 "rank": rank + 1,
-                "score": score,
+                "score": float(similarities[idx]),
                 "chunk": self.chunks[idx],
                 "method": "tfidf_baseline",
-                "has_match": score > 0.0
+                "has_match": True
             })
         return results

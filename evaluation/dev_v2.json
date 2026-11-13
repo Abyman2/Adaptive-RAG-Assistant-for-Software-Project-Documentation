@@ -81,7 +81,7 @@
       "category": "direct_technical",
       "question": "What are the token expiration lifetimes for access and refresh tokens?",
       "answerable": true,
-      "gold_chunk_ids": [4, 5],
+      "gold_chunk_ids": [5],
       "gold_sections": ["## 5. Security, Authentication, and Access Control"],
       "gold_evidence_snippets": ["60-minute expiry", "7 days"],
       "reference_answer": "Access tokens expire in 60 minutes, refresh tokens in 7 days."
@@ -128,3 +128,4 @@
     }
   ]
 }
+

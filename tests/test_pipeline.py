@@ -96,7 +96,8 @@ def test_tfidf_baseline():
     baseline.index(chunks)
     
     results = baseline.search("PostgreSQL database", top_k=2)
-    assert len(results) == 2
+    # Only db.md contains matching terms; other chunks have 0.0 similarity and are not returned
+    assert len(results) == 1
     assert results[0]["chunk"]["source"] == "db.md"
     assert results[0]["score"] > 0.0
     assert results[0]["has_match"] is True
@@ -112,9 +113,8 @@ def test_tfidf_zero_match():
     
     # Completely non-matching query
     results = baseline.search("Quantum Superposition Entanglement", top_k=1)
-    assert len(results) == 1
-    assert results[0]["score"] == 0.0
-    assert results[0]["has_match"] is False
+    assert len(results) == 0
+    assert results == []
 
 
 def test_adaptive_retrieval_modes():

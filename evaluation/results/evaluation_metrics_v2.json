@@ -1,9 +1,9 @@
 {
   "model_startup_ms": {
-    "doc_processing": 1.334200002020225,
-    "tfidf_indexing": 39.081099996110424,
-    "minilm_embedding": 7333.595000003697,
-    "flan_t5_loading": 1083.5249999945518
+    "doc_processing": 0.9956999856512994,
+    "tfidf_indexing": 18.285300000570714,
+    "minilm_embedding": 5360.653200012166,
+    "flan_t5_loading": 1110.877300001448
   },
   "calibration_sweep": [
     {
@@ -79,16 +79,16 @@
       "recall_at_3": 1.0,
       "recall_at_5": 1.0,
       "mrr": 1.0,
-      "mean_latency_ms": 3.591535000305157,
-      "median_latency_ms": 2.929299997049384
+      "mean_latency_ms": 4.992579999088775,
+      "median_latency_ms": 4.59525000769645
     },
     "minilm_semantic": {
       "recall_at_1": 0.6666666666666666,
       "recall_at_3": 1.0,
       "recall_at_5": 1.0,
       "mrr": 0.8194444444444445,
-      "mean_latency_ms": 19.750180005212314,
-      "median_latency_ms": 17.56510000268463
+      "mean_latency_ms": 71.35983999905875,
+      "median_latency_ms": 48.94749999220949
     },
     "adaptive_rag": {
       "recall_at_1": 0.6666666666666666,
@@ -96,8 +96,8 @@
       "recall_at_5": 1.0,
       "mrr": 0.8194444444444445,
       "evidence_coverage": 1.0,
-      "mean_latency_ms": 35.07364499819232,
-      "median_latency_ms": 34.034550000797026
+      "mean_latency_ms": 154.844359998242,
+      "median_latency_ms": 158.02114999678452
     }
   },
   "adaptive_topk_distribution": {

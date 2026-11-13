@@ -36,25 +36,31 @@ from src.adaptive_retrieval import AdaptiveRetriever
 from src.generator import AnswerGenerator
 
 
-def is_chunk_gold_relevant(chunk_dict, gold_chunk_ids, gold_evidence_snippets, score=1.0):
-    """Strict ground-truth relevance check.
+def is_chunk_gold_relevant(chunk_dict, gold_chunk_ids, gold_sections, gold_evidence_snippets, score=1.0):
+    """Consistent and strict ground-truth relevance check.
     
-    A chunk is relevant iff:
-    1. Retrieval score > 0 (for TF-IDF, zero-similarity items are non-matches).
-    2. The chunk ID matches gold_chunk_ids OR all required gold snippets appear in text.
+    A chunk is judged relevant iff ALL of the following criteria are met:
+    1. Retrieval score > 0.0 (items with zero lexical/semantic similarity are non-matches).
+    2. The chunk ID is in gold_chunk_ids.
+    3. The chunk's section metadata matches at least one of gold_sections.
+    4. All gold evidence snippets are contained within the chunk's text.
     """
     if score <= 0.0:
         return False
-        
+
     chunk_id = chunk_dict.get("chunk_id")
-    if chunk_id is not None and chunk_id in gold_chunk_ids:
-        return True
+    if chunk_id is None or chunk_id not in gold_chunk_ids:
+        return False
+
+    chunk_sections = chunk_dict.get("sections", [])
+    if gold_sections and not any(sec in gold_sections for sec in chunk_sections):
+        return False
 
     text_lower = chunk_dict.get("text", "").lower()
-    if gold_evidence_snippets and all(s.lower() in text_lower for s in gold_evidence_snippets):
-        return True
+    if gold_evidence_snippets and not all(s.lower() in text_lower for s in gold_evidence_snippets):
+        return False
 
-    return False
+    return True
 
 
 def calibrate_thresholds(retriever, dev_questions):
@@ -127,6 +133,7 @@ def evaluate_dataset(retriever, adaptive_retriever, baseline, generator, dataset
         question = item["question"]
         answerable = item["answerable"]
         gold_chunk_ids = item.get("gold_chunk_ids", [])
+        gold_sections = item.get("gold_sections", [])
         gold_snippets = item.get("gold_evidence_snippets", [])
 
         # 1. Baseline TF-IDF (Static top-5)
@@ -167,21 +174,21 @@ def evaluate_dataset(retriever, adaptive_retriever, baseline, generator, dataset
         # Ranking metrics calculated strictly on ANSWERABLE queries
         if answerable:
             # TF-IDF Ranking
-            tfidf_hits = [is_chunk_gold_relevant(r["chunk"], gold_chunk_ids, gold_snippets, r["score"]) for r in tfidf_results]
+            tfidf_hits = [is_chunk_gold_relevant(r["chunk"], gold_chunk_ids, gold_sections, gold_snippets, r["score"]) for r in tfidf_results]
             row["tfidf_r1"] = 1 if (len(tfidf_hits) > 0 and tfidf_hits[0]) else 0
             row["tfidf_r3"] = 1 if any(tfidf_hits[:3]) else 0
             row["tfidf_r5"] = 1 if any(tfidf_hits[:5]) else 0
             row["tfidf_mrr"] = next((1.0 / rank for rank, hit in enumerate(tfidf_hits, start=1) if hit), 0.0)
 
             # MiniLM Ranking
-            sem_hits = [is_chunk_gold_relevant(r["chunk"], gold_chunk_ids, gold_snippets, r["score"]) for r in semantic_results]
+            sem_hits = [is_chunk_gold_relevant(r["chunk"], gold_chunk_ids, gold_sections, gold_snippets, r["score"]) for r in semantic_results]
             row["sem_r1"] = 1 if (len(sem_hits) > 0 and sem_hits[0]) else 0
             row["sem_r3"] = 1 if any(sem_hits[:3]) else 0
             row["sem_r5"] = 1 if any(sem_hits[:5]) else 0
             row["sem_mrr"] = next((1.0 / rank for rank, hit in enumerate(sem_hits, start=1) if hit), 0.0)
 
             # Adaptive RAG Ranking & Context Coverage
-            adapt_hits = [is_chunk_gold_relevant(r["chunk"], gold_chunk_ids, gold_snippets, r["score"]) for r in adaptive_info["results"]]
+            adapt_hits = [is_chunk_gold_relevant(r["chunk"], gold_chunk_ids, gold_sections, gold_snippets, r["score"]) for r in adaptive_info["results"]]
             row["adapt_r1"] = 1 if (len(adapt_hits) > 0 and adapt_hits[0]) else 0
             row["adapt_r3"] = 1 if any(adapt_hits[:3]) else 0
             row["adapt_r5"] = 1 if any(adapt_hits[:5]) else 0

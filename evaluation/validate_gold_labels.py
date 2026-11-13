@@ -1,6 +1,9 @@
 """Validation script for gold evidence labels.
-Verifies that all gold_chunk_ids, gold_sections, and gold_evidence_snippets
-exist and match the frozen chunked documentation corpus.
+Strictly verifies that:
+1. Every answerable question has valid gold_chunk_ids.
+2. Every gold chunk belongs to one of the question's gold_sections.
+3. Every gold chunk contains the question's gold_evidence_snippets.
+4. Unanswerable questions have empty gold lists.
 """
 
 import json
@@ -29,10 +32,17 @@ def validate_dataset(dataset_file, chunks):
         answerable = q["answerable"]
         if not answerable:
             assert len(q["gold_chunk_ids"]) == 0, f"{qid}: Unanswerable question must have empty gold_chunk_ids"
+            assert len(q["gold_sections"]) == 0, f"{qid}: Unanswerable question must have empty gold_sections"
+            assert len(q["gold_evidence_snippets"]) == 0, f"{qid}: Unanswerable question must have empty snippets"
             continue
 
         gold_ids = q["gold_chunk_ids"]
+        gold_sections = q["gold_sections"]
+        snippets = q["gold_evidence_snippets"]
+
         assert len(gold_ids) > 0, f"{qid}: Answerable question must specify at least one gold_chunk_id"
+        assert len(gold_sections) > 0, f"{qid}: Answerable question must specify at least one gold_section"
+        assert len(snippets) > 0, f"{qid}: Answerable question must specify at least one gold_evidence_snippet"
 
         # Check each gold chunk
         for gid in gold_ids:
@@ -41,17 +51,24 @@ def validate_dataset(dataset_file, chunks):
                 all_passed = False
                 continue
 
-            chunk_text = chunks[gid]["text"]
+            chunk = chunks[gid]
+            chunk_text = chunk["text"]
+            chunk_sections = chunk.get("sections", [])
 
-            # Verify that at least one gold evidence snippet is in the chunk
-            snippets = q["gold_evidence_snippets"]
-            snippet_found = any(s.lower() in chunk_text.lower() for s in snippets)
+            # 1. Section check: chunk must be associated with at least one gold section
+            section_match = any(sec in gold_sections for sec in chunk_sections)
+            if not section_match:
+                print(f"FAIL: {qid} chunk {gid} sections {chunk_sections} do not match gold_sections {gold_sections}")
+                all_passed = False
+
+            # 2. Evidence snippet check: all snippets must be in chunk text
+            snippet_found = all(s.lower() in chunk_text.lower() for s in snippets)
             if not snippet_found:
-                print(f"FAIL: {qid} none of snippets {snippets} found in chunk {gid}")
+                print(f"FAIL: {qid} snippets {snippets} not all found in chunk {gid}")
                 all_passed = False
 
     if all_passed:
-        print(f"SUCCESS: All {len(questions)} labels in {dataset_file.name} verified against frozen corpus!")
+        print(f"SUCCESS: All {len(questions)} questions in {dataset_file.name} passed section, chunk, and evidence verification!")
     return all_passed
 
 
@@ -65,7 +82,7 @@ def main():
     v2 = validate_dataset(Path("evaluation/held_out_v2.json"), chunks)
 
     if v1 and v2:
-        print("\n*** ALL GOLD EVIDENCE LABELS VERIFIED AND FROZEN ***")
+        print("\n*** ALL GOLD EVIDENCE LABELS STRICTLY VALIDATED (SECTION + CHUNK ID + SNIPPET) ***")
     else:
         raise ValueError("Gold label validation failed!")
 

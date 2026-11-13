@@ -302,11 +302,13 @@ def main():
                 with col1:
                     st.markdown("#### 1. TF-IDF Keyword Baseline")
                     st.caption("Matches exact token occurrences and term frequency.")
-                    for r in tfidf_res:
-                        st.metric(f"Rank {r['rank']} Score", f"{r['score']:.3f}")
-                        match_note = "✅ Lexical overlap" if r["has_match"] else "❌ Zero overlap"
-                        st.caption(match_note)
-                        st.text_area(f"TF-IDF #{r['rank']} ({r['chunk']['source']})", r["chunk"]["text"][:220] + "...", height=100, disabled=True)
+                    if tfidf_res:
+                        for r in tfidf_res:
+                            st.metric(f"Rank {r['rank']} Score", f"{r['score']:.3f}")
+                            st.caption("✅ Lexical overlap")
+                            st.text_area(f"TF-IDF #{r['rank']} ({r['chunk']['source']})", r["chunk"]["text"][:220] + "...", height=100, disabled=True)
+                    else:
+                        st.warning("❌ No lexical matches found (zero term overlap).")
 
                 with col2:
                     st.markdown("#### 2. MiniLM Dense Semantic")

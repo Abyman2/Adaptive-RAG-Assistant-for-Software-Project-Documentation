@@ -31,7 +31,8 @@ def test_baseline_and_adaptive_integration():
     tfidf = TfidfBaseline()
     tfidf.index(chunks)
     res_tfidf = tfidf.search("PostgreSQL database migrations", top_k=2)
-    assert len(res_tfidf) == 2
+    # Strictly positive matches: only database.md matches the keywords
+    assert len(res_tfidf) == 1
     assert "database.md" in res_tfidf[0]["chunk"]["source"]
 
     # Test Adaptive Logic wrapper with mock scores
