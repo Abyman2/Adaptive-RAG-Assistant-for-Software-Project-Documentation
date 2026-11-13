@@ -26,8 +26,8 @@ The **Adaptive RAG Assistant** is a Transformer-powered software engineering ass
 
 ## 📽️ Demo Video
 
-- **Video Link (Unlisted YouTube):** `[INSERT_YOUR_UNLISTED_DEMO_VIDEO_LINK_HERE]`
-- **Duration:** 5–8 minutes
+- **Video Link (Unlisted YouTube):** `[https://drive.google.com/file/d/1kljmHPBFppgy9c6ohp805QHYkAriSmlr/view?usp=sharing]`
+- **Duration:** 14 minutes
 - **Contents:**
   1. Motivation & Real SE Problem (Developer onboarding, doc navigation, lexical gap).
   2. Live Demonstration of 6 Workspace Views (Overview, Ingestion, Assistant with Evidence Inspector, Retrieval Lab, Evaluation Center, Adaptive Policy).
