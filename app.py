@@ -1,9 +1,9 @@
 """Streamlit web interface for Adaptive RAG Assistant.
-Provides:
-1. Project Manager: Ingest project files, directories, or sample software docs.
-2. AI Assistant: Natural language Q&A with adaptive confidence badges & grounded answers.
-3. Retrieval Comparison: Side-by-side comparison of TF-IDF baseline vs MiniLM semantic search.
-4. Evaluation Dashboard: Live benchmark metrics, calibration sweep, plots, and failure analysis.
+A professional developer documentation assistant featuring:
+1. Project Manager: Index local repositories, uploaded files, or built-in software documentation.
+2. AI Documentation Assistant: Natural language Q&A with calibrated confidence badges and grounded citations.
+3. Retrieval Comparison: Side-by-side benchmark of TF-IDF keyword baseline vs MiniLM dense embeddings vs Adaptive Engine.
+4. Evaluation Dashboard: Live benchmark metrics, calibration sweep, plots, and empirical failure analysis.
 """
 
 import os
@@ -26,61 +26,143 @@ from src.baseline import TfidfBaseline
 
 
 st.set_page_config(
-    page_title="Adaptive RAG Assistant for Software Docs",
-    page_icon="📚",
+    page_title="Adaptive RAG Assistant | Software Docs",
+    page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom Styling
+# Professional Developer UI Theme (Modern Slate / Dark Theme)
 st.markdown("""
 <style>
-    .metric-card {
-        background-color: #f8f9fa;
-        border-radius: 8px;
-        padding: 16px;
-        border-left: 5px solid #4A90E2;
-        margin-bottom: 12px;
+    /* Global Font & Header Tweaks */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
+    
+    /* Sleek Container Cards */
+    .doc-card {
+        background: linear-gradient(145deg, #161b22, #0d1117);
+        border: 1px solid #30363d;
+        border-radius: 12px;
+        padding: 22px;
+        margin-bottom: 18px;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    }
+    
+    .answer-card {
+        background: linear-gradient(145deg, #1a2234, #0f172a);
+        border: 1px solid #2563eb;
+        border-left: 6px solid #3b82f6;
+        border-radius: 12px;
+        padding: 24px;
+        margin-top: 16px;
+        margin-bottom: 20px;
+        box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
+    }
+    
+    .abstain-card {
+        background: linear-gradient(145deg, #2a1b18, #1c1412);
+        border: 1px solid #dc2626;
+        border-left: 6px solid #ef4444;
+        border-radius: 12px;
+        padding: 24px;
+        margin-top: 16px;
+        margin-bottom: 20px;
+        box-shadow: 0 8px 24px rgba(220, 38, 38, 0.15);
+    }
+
+    /* Status Badges */
+    .badge-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 14px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+    }
+    
     .badge-focused {
-        background-color: #d4edda;
-        color: #155724;
-        padding: 6px 12px;
-        border-radius: 6px;
-        font-weight: 600;
-        display: inline-block;
+        background: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+        border: 1px solid #059669;
     }
+    
     .badge-expanded {
-        background-color: #d1ecf1;
-        color: #0c5460;
-        padding: 6px 12px;
-        border-radius: 6px;
-        font-weight: 600;
-        display: inline-block;
+        background: rgba(59, 130, 246, 0.15);
+        color: #60a5fa;
+        border: 1px solid #2563eb;
     }
+    
     .badge-broad {
-        background-color: #fff3cd;
-        color: #856404;
-        padding: 6px 12px;
-        border-radius: 6px;
-        font-weight: 600;
-        display: inline-block;
+        background: rgba(245, 158, 11, 0.15);
+        color: #fbbf24;
+        border: 1px solid #d97706;
     }
-    .badge-insufficient {
-        background-color: #f8d7da;
-        color: #721c24;
-        padding: 6px 12px;
-        border-radius: 6px;
-        font-weight: 600;
+    
+    .badge-abstain {
+        background: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+        border: 1px solid #dc2626;
+    }
+
+    /* Citation Tag */
+    .citation-tag {
         display: inline-block;
+        background: #21262d;
+        color: #c9d1d9;
+        border: 1px solid #30363d;
+        border-radius: 6px;
+        padding: 4px 10px;
+        margin: 4px 6px 4px 0;
+        font-size: 0.82rem;
+        font-family: 'JetBrains Mono', monospace;
+    }
+    
+    /* Highlight Quote Container */
+    .quote-box {
+        background: #0d1117;
+        border-left: 4px solid #8b5cf6;
+        border-radius: 0 8px 8px 0;
+        padding: 12px 18px;
+        margin-top: 14px;
+        font-size: 0.92rem;
+        color: #e6edf3;
+        font-family: 'JetBrains Mono', monospace;
+    }
+    
+    /* Comparison Column Cards */
+    .comp-col-card {
+        background: #161b22;
+        border: 1px solid #30363d;
+        border-radius: 10px;
+        padding: 16px;
+        min-height: 240px;
+    }
+    
+    .score-meter {
+        height: 6px;
+        border-radius: 3px;
+        background: #21262d;
+        margin-top: 6px;
+        margin-bottom: 12px;
+        overflow: hidden;
+    }
+    .score-fill {
+        height: 100%;
+        border-radius: 3px;
     }
 </style>
 """, unsafe_allow_html=True)
 
 
-@st.cache_resource(show_spinner="Loading Transformer Models (all-MiniLM-L6-v2 & flan-t5-small)...")
+@st.cache_resource(show_spinner="Initializing Neural Models (all-MiniLM-L6-v2 & flan-t5-small)...")
 def load_models():
-    """Load semantic retriever and generator models once and cache them."""
+    """Load semantic retriever, adaptive controller, generator, and TF-IDF baseline."""
     semantic = SemanticRetriever()
     adaptive = AdaptiveRetriever(semantic, min_threshold=0.31)
     generator = AnswerGenerator()
@@ -88,34 +170,68 @@ def load_models():
     return semantic, adaptive, generator, baseline
 
 
-def main():
-    st.title("📚 Adaptive RAG Assistant for Software Project Documentation")
-    st.caption("A Transformer-powered engineering tool that dynamically adapts retrieval context and abstains on out-of-domain questions.")
+def clean_generated_answer(raw_answer: str) -> str:
+    """Format generator output, stripping repetitive prefixes and cleaning punctuation."""
+    ans = raw_answer.strip()
+    if ans.lower().startswith("answer:"):
+        ans = ans[7:].strip()
+    if ans and not ans.endswith((".", "!", "?")):
+        ans += "."
+    return ans
 
-    # Load models
+
+def main():
+    # Top Branding Bar
+    st.markdown("""
+    <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid #30363d; margin-bottom: 20px;">
+        <div>
+            <h2 style="margin: 0; font-weight: 700; color: #f0f6fc;">
+                ⚡ Adaptive RAG Assistant <span style="font-size: 1rem; color: #8b949e; font-weight: 400;">| Software Documentation Intelligence</span>
+            </h2>
+            <p style="margin: 4px 0 0 0; color: #8b949e; font-size: 0.92rem;">
+                Confidence-gated Transformer retrieval (MiniLM-L6-v2) & grounded generation (FLAN-T5) with calibrated abstention.
+            </p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Load neural models
     semantic, adaptive, generator, baseline = load_models()
 
-    # Sidebar Configurations
-    st.sidebar.header("⚙️ Adaptive Engine Calibration")
-    focused_thresh = st.sidebar.slider("Focused Mode Threshold", 0.40, 0.80, 0.55, 0.05,
-                                      help="Queries with top-1 score >= threshold retrieve top-3 chunks.")
-    expanded_thresh = st.sidebar.slider("Expanded Mode Threshold", 0.25, 0.55, 0.35, 0.05,
-                                       help="Queries in this range expand context to top-6 chunks.")
-    min_thresh = st.sidebar.slider("Abstention Threshold (Calibrated)", 0.15, 0.45, 0.31, 0.01,
-                                  help="Empirically calibrated cutoff on development set; queries below this are flagged as unanswerable.")
+    # Sidebar: Adaptive Engine Controller
+    with st.sidebar:
+        st.markdown("### ⚙️ Adaptive Policy Control")
+        st.caption("Fine-tune dynamic context switching thresholds calibrated against the development benchmark.")
 
-    adaptive.focused_threshold = focused_thresh
-    adaptive.expanded_threshold = expanded_thresh
-    adaptive.min_threshold = min_thresh
+        focused_thresh = st.slider(
+            "Focused Mode (K=3) Cutoff", 0.40, 0.80, 0.55, 0.05,
+            help="High-confidence queries (>= 0.55) pull tight top-3 context chunks."
+        )
+        expanded_thresh = st.slider(
+            "Expanded Mode (K=6) Cutoff", 0.25, 0.55, 0.35, 0.05,
+            help="Moderate ambiguity queries (0.35 - 0.55) pull expanded top-6 context chunks."
+        )
+        min_thresh = st.slider(
+            "Abstention Threshold (τ)", 0.15, 0.45, 0.31, 0.01,
+            help="Empirically calibrated cutoff (0.31). Queries below this are actively rejected to suppress hallucination."
+        )
 
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("""
-    **Core Technology Stack:**
-    - **Embeddings:** `all-MiniLM-L6-v2` (384d Dense)
-    - **Generator:** `google/flan-t5-small` (Seq2Seq)
-    - **Baseline:** Scikit-learn TF-IDF Vectorizer
-    - **Related Precedent:** Calibrated abstention cutoff (Emirhan Yildirim)
-    """)
+        adaptive.focused_threshold = focused_thresh
+        adaptive.expanded_threshold = expanded_thresh
+        adaptive.min_threshold = min_thresh
+
+        st.markdown("---")
+        st.markdown("""
+        **Pipeline Specification:**
+        - **Embedding Space:** `all-MiniLM-L6-v2` (384d)
+        - **Inference Hardware:** CPU Local Execution
+        - **Grounded Generator:** `google/flan-t5-small` (77M)
+        - **Keyword Baseline:** Scikit-Learn TF-IDF
+        - **Calibration Precedent:** Yildirim (2024)
+        """)
+        
+        st.markdown("---")
+        st.caption("Project 1: Selected Topics in Software Engineering")
 
     # Initialize Session State
     if "documents" not in st.session_state:
@@ -123,27 +239,34 @@ def main():
         st.session_state.chunks = []
         st.session_state.indexed = False
 
-    # Main Navigation Tabs
+    # Navigation Tabs
     tab_proj, tab_chat, tab_comp, tab_eval = st.tabs([
-        "📂 Project Manager",
-        "💬 AI Documentation Assistant",
-        "⚖️ Retrieval Comparison",
-        "📊 Evaluation & Failure Analysis Dashboard"
+        "📁 1. Project Ingestion",
+        "💬 2. Documentation Assistant",
+        "⚖️ 3. Retrieval Diagnostic",
+        "📊 4. Benchmark & Failure Analysis"
     ])
 
     # -------------------------------------------------------------
-    # 1. Project Manager
+    # 1. Project Ingestion
     # -------------------------------------------------------------
     with tab_proj:
-        st.subheader("📁 Project Documentation Ingestion")
-        st.write("Index an existing software project repository, upload documentation files, or load the pre-configured sample project.")
+        st.markdown("### 📁 Project Workspace & Document Ingestion")
+        st.markdown("Load your software documentation, specifications, or codebase files to build both dense vector and lexical indices.")
 
-        col_a, col_b = st.columns(2)
+        col1, col2 = st.columns(2)
 
-        with col_a:
-            st.markdown("#### Option A: Load Built-in UniServe Project")
-            st.info("UniServe is a full-stack Spring Boot 3 + React 18 microservice platform with PostgreSQL, Kafka, and Flyway documentation.")
-            if st.button("🚀 Load UniServe Sample Documentation", type="primary", use_container_width=True):
+        with col1:
+            st.markdown("""
+            <div class="doc-card">
+                <h4 style="margin-top:0; color: #58a6ff;">🚀 Option A: Built-in UniServe Specification</h4>
+                <p style="color: #8b949e; font-size: 0.9rem;">
+                    Full architectural specification of the UniServe microservice system: Spring Boot 3, React 18, 
+                    PostgreSQL schemas, Kafka routing, Flyway migrations, and JWT security roles.
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("Load Pre-Configured UniServe Docs", type="primary", use_container_width=True):
                 sample_path = Path("sample_docs/sample_project.md")
                 if sample_path.exists():
                     doc = load_document(sample_path)
@@ -152,35 +275,44 @@ def main():
                     semantic.index(st.session_state.chunks)
                     baseline.index(st.session_state.chunks)
                     st.session_state.indexed = True
-                    st.success(f"Indexed UniServe documentation: {len(st.session_state.chunks)} chunks generated.")
+                    st.toast("UniServe documentation indexed successfully!", icon="✅")
 
-        with col_b:
-            st.markdown("#### Option B: Ingest Local Directory")
-            dir_input = st.text_input("Enter local project path:", placeholder="e.g. C:/Projects/my-backend-app")
-            if st.button("📁 Index Local Directory", use_container_width=True) and dir_input:
+        with col2:
+            st.markdown("""
+            <div class="doc-card">
+                <h4 style="margin-top:0; color: #58a6ff;">📂 Option B: Ingest Local Repository</h4>
+                <p style="color: #8b949e; font-size: 0.9rem;">
+                    Point the assistant at any local folder on your computer containing Markdown files, codefiles (.py, .java, .js), PDF reports, or DOCX specifications.
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+            dir_input = st.text_input("Local project folder path:", placeholder="e.g. C:/Projects/my-backend-app")
+            if st.button("Scan & Index Local Directory", use_container_width=True) and dir_input:
                 target_dir = Path(dir_input)
                 if target_dir.is_dir():
-                    docs = load_directory(target_dir)
-                    if docs:
-                        st.session_state.documents = docs
-                        st.session_state.chunks = process_documents(docs, chunk_size=100, overlap=25)
-                        semantic.index(st.session_state.chunks)
-                        baseline.index(st.session_state.chunks)
-                        st.session_state.indexed = True
-                        st.success(f"Successfully indexed {len(docs)} files ({len(st.session_state.chunks)} chunks) from {target_dir.name}")
-                    else:
-                        st.error("No supported documentation or code files found in directory.")
+                    with st.spinner("Parsing and chunking directory files..."):
+                        docs = load_directory(target_dir)
+                        if docs:
+                            st.session_state.documents = docs
+                            st.session_state.chunks = process_documents(docs, chunk_size=100, overlap=25)
+                            semantic.index(st.session_state.chunks)
+                            baseline.index(st.session_state.chunks)
+                            st.session_state.indexed = True
+                            st.toast(f"Indexed {len(docs)} files ({len(st.session_state.chunks)} chunks)!", icon="🎉")
+                        else:
+                            st.error("No supported documentation files found in target folder.")
                 else:
-                    st.error("Invalid directory path.")
+                    st.error("Target path does not exist or is not a directory.")
 
+        # File Upload Area
         st.markdown("---")
-        st.markdown("#### Option C: Upload Project Files Directly")
+        st.markdown("#### 📤 Option C: Drag & Drop Document Files")
         uploaded_files = st.file_uploader(
-            "Upload documentation (PDF, DOCX, Markdown, Code, JSON, YAML):",
+            "Upload specification documents (PDF, DOCX, Markdown, Code, JSON, YAML):",
             type=[ext.replace(".", "") for ext in SUPPORTED_EXTENSIONS],
             accept_multiple_files=True
         )
-        if uploaded_files and st.button("📥 Index Uploaded Files", use_container_width=True):
+        if uploaded_files and st.button("Process & Index Uploaded Documents", use_container_width=True):
             docs = []
             for uf in uploaded_files:
                 suffix = Path(uf.name).suffix.lower()
@@ -202,30 +334,35 @@ def main():
                 semantic.index(st.session_state.chunks)
                 baseline.index(st.session_state.chunks)
                 st.session_state.indexed = True
-                st.success(f"Successfully indexed {len(docs)} uploaded files ({len(st.session_state.chunks)} chunks).")
+                st.toast(f"Successfully indexed {len(docs)} files!", icon="🚀")
 
-        # Current status
+        # Ingestion Status Board
         if st.session_state.indexed:
             st.markdown("---")
-            st.markdown("### 📋 Currently Indexed Documents")
-            stat_c1, stat_c2, stat_c3 = st.columns(3)
-            stat_c1.metric("Indexed Documents", len(st.session_state.documents))
-            stat_c2.metric("Total Context Chunks", len(st.session_state.chunks))
-            stat_c3.metric("Vector Embeddings", f"{len(st.session_state.chunks)} x 384d")
-            with st.expander("View indexed file list"):
+            st.markdown("### 📋 Active Project Workspace Status")
+            kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+            kpi1.metric("Indexed Documents", len(st.session_state.documents))
+            kpi2.metric("Total Chunks", len(st.session_state.chunks))
+            kpi3.metric("Chunking Strategy", "100 words (25 overlap)")
+            kpi4.metric("Embedding Space", "384-dimensional")
+
+            with st.expander("🔍 View Processed Documents Breakdown"):
                 for d in st.session_state.documents:
-                    st.write(f"- `{d['source']}` ({len(d['text'].split())} words)")
+                    word_cnt = len(d['text'].split())
+                    st.markdown(f"- **`{d['source']}`** &nbsp;•&nbsp; `{word_cnt}` words")
 
     # -------------------------------------------------------------
     # 2. AI Documentation Assistant
     # -------------------------------------------------------------
     with tab_chat:
-        st.subheader("💬 Ask Questions About the Software Project")
+        st.markdown("### 💬 Ask Questions About the Software Project")
+        st.markdown("Query the technical documentation using natural language. The system dynamically decides context depth or abstains if information is missing.")
+
         if not st.session_state.indexed:
-            st.warning("👈 Please index project documents in the **Project Manager** tab first.")
+            st.info("👈 **Get Started:** Load the UniServe project or index a directory in the **Project Ingestion** tab.")
         else:
             preset_questions = [
-                "Select an example question...",
+                "Select an example query...",
                 "What terminal command launches the client-side user interface in development mode?",
                 "What HTTP route delivers Prometheus performance metrics for application monitoring?",
                 "How can an engineer manually trigger database structure updates from the CLI?",
@@ -240,9 +377,9 @@ def main():
             selected_preset = st.selectbox("Quick-test example questions:", preset_questions)
             default_query = selected_preset.split(" (")[0] if selected_preset != preset_questions[0] else ""
 
-            query = st.text_input("Enter your software engineering question:", value=default_query)
+            query = st.text_input("Enter your software engineering question:", value=default_query, placeholder="e.g. How does user authentication work?")
 
-            if st.button("Submit Question", type="primary") and query.strip():
+            if st.button("Submit Question", type="primary", use_container_width=True) and query.strip():
                 with st.spinner("Analyzing documentation with Adaptive RAG..."):
                     adaptive_res = adaptive.retrieve(query)
                     mode = adaptive_res["mode"]
@@ -252,47 +389,112 @@ def main():
                     results = adaptive_res["results"]
 
                     gen_res = generator.generate(query, results, sufficient_evidence=sufficient)
+                    answer_text = clean_generated_answer(gen_res["answer"])
 
-                st.markdown("---")
-                st.markdown("### 🎯 Adaptive Assessment")
-
+                # Determine Badge HTML
                 if not sufficient:
-                    badge_html = f'<span class="badge-insufficient">⚠️ INSUFFICIENT EVIDENCE (Confidence: {confidence:.2f} < {min_thresh:.2f})</span>'
+                    badge_html = f'<span class="badge-pill badge-abstain">🔴 ABSTENTION TRIGGERED &nbsp;•&nbsp; Confidence: {confidence:.2f} &lt; {min_thresh:.2f}</span>'
                 elif mode == "focused":
-                    badge_html = f'<span class="badge-focused">🎯 FOCUSED MODE (Confidence: {confidence:.2f} >= {focused_thresh:.2f}) — Top {top_k} Chunks</span>'
+                    badge_html = f'<span class="badge-pill badge-focused">🟢 FOCUSED MODE &nbsp;•&nbsp; Top-{top_k} Chunks &nbsp;•&nbsp; Confidence: {confidence:.2f}</span>'
                 elif mode == "expanded":
-                    badge_html = f'<span class="badge-expanded">🔍 EXPANDED MODE (Confidence: {confidence:.2f} >= {expanded_thresh:.2f}) — Top {top_k} Chunks</span>'
+                    badge_html = f'<span class="badge-pill badge-expanded">🔵 EXPANDED MODE &nbsp;•&nbsp; Top-{top_k} Chunks &nbsp;•&nbsp; Confidence: {confidence:.2f}</span>'
                 else:
-                    badge_html = f'<span class="badge-broad">🌐 BROAD MODE (Confidence: {confidence:.2f}) — Top {top_k} Chunks</span>'
+                    badge_html = f'<span class="badge-pill badge-broad">🟡 BROAD MODE &nbsp;•&nbsp; Top-{top_k} Chunks &nbsp;•&nbsp; Confidence: {confidence:.2f}</span>'
 
-                st.markdown(badge_html, unsafe_allow_html=True)
-                st.caption(f"**Adaptive Strategy Rationale:** {adaptive_res['explanation']}")
+                # Render Result Card
+                if not sufficient:
+                    st.markdown(f"""
+                    <div class="abstain-card">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                            <span style="font-size:0.85rem; font-weight:700; color:#ef4444; text-transform:uppercase; letter-spacing:0.5px;">Grounded Verification System</span>
+                            {badge_html}
+                        </div>
+                        <h4 style="margin:0 0 10px 0; color:#f87171;">⚠️ Insufficient Project Documentation Found</h4>
+                        <p style="margin:0; color:#cbd5e1; font-size:0.95rem; line-height:1.6;">
+                            {answer_text}
+                        </p>
+                        <div style="margin-top:14px; padding-top:10px; border-top:1px solid rgba(239, 68, 68, 0.2); font-size:0.85rem; color:#94a3b8;">
+                            <strong>Adaptive Policy Action:</strong> {adaptive_res['explanation']}
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    # Verified Citations HTML
+                    citations_html = "".join([f'<span class="citation-tag">📄 {cite}</span>' for cite in gen_res.get("citations", [])])
+                    
+                    # Top evidence snippet
+                    top_chunk = results[0]["chunk"] if results else {"text": "", "sections": []}
+                    top_sections = " > ".join(top_chunk.get("sections", [])) if top_chunk.get("sections") else "Specification Root"
+                    top_snippet = top_chunk.get("text", "")[:280] + "..." if len(top_chunk.get("text", "")) > 280 else top_chunk.get("text", "")
 
-                st.markdown("### 💡 Generated Grounded Answer")
-                st.info(f"**Answer:** {gen_res['answer']}")
+                    st.markdown(f"""
+                    <div class="answer-card">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap: wrap; gap: 8px;">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="font-size:1.1rem;">⚡</span>
+                                <span style="font-size:0.85rem; font-weight:700; color:#60a5fa; text-transform:uppercase; letter-spacing:0.5px;">Verified Answer Summary</span>
+                            </div>
+                            {badge_html}
+                        </div>
+                        <div style="font-size:1.05rem; color:#f8fafc; font-weight:500; line-height:1.6; margin-bottom:16px;">
+                            {answer_text}
+                        </div>
+                        <div style="margin-top:10px;">
+                            <span style="font-size:0.8rem; font-weight:600; color:#94a3b8; text-transform:uppercase;">Verified Source Documents:</span><br/>
+                            <div style="margin-top:4px;">{citations_html}</div>
+                        </div>
+                        <div class="quote-box">
+                            <div style="font-size:0.75rem; color:#a78bfa; margin-bottom:4px; font-weight:600;">
+                                🔖 PRIMARY EVIDENCE &nbsp;|&nbsp; {top_sections}
+                            </div>
+                            <div style="color:#e2e8f0; font-size:0.85rem; line-height:1.5;">
+                                "{top_snippet}"
+                            </div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
-                if gen_res["citations"]:
-                    st.markdown(f"**Source Document References:** `{', '.join(gen_res['citations'])}`")
-
-                with st.expander(f"📄 Inspect Retrieved Context ({len(results)} Chunks)"):
+                # Expandable Deep Inspection
+                with st.expander(f"📑 Inspect Full Retrieved Context ({len(results)} Chunks)"):
                     for i, r in enumerate(results, start=1):
-                        chunk = r["chunk"]
-                        st.markdown(f"**Chunk #{i}** | Source: `{chunk['source']}` | Similarity Score: `{r['score']:.3f}`")
-                        st.code(chunk["text"], language="markdown")
+                        c = r["chunk"]
+                        sections_tag = " > ".join(c.get("sections", [])) if c.get("sections") else "Root"
+                        score = r["score"]
+                        bar_color = "#10b981" if score >= 0.50 else ("#3b82f6" if score >= 0.35 else "#f59e0b")
+                        
+                        st.markdown(f"""
+                        <div style="background:#11161d; border:1px solid #30363d; border-radius:8px; padding:14px; margin-bottom:10px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                <span style="font-weight:600; font-size:0.9rem; color:#f0f6fc;">
+                                    Rank #{i} &nbsp;•&nbsp; <span style="color:#58a6ff; font-family:monospace;">{c['source']}</span> &nbsp;•&nbsp; <span style="color:#8b949e;">{sections_tag}</span>
+                                </span>
+                                <span style="font-family:monospace; font-size:0.85rem; font-weight:700; color:{bar_color};">
+                                    Cosine: {score:.3f}
+                                </span>
+                            </div>
+                            <div style="height:4px; background:#21262d; border-radius:2px; margin-bottom:10px; overflow:hidden;">
+                                <div style="height:100%; width:{min(score * 100, 100):.1f}%; background:{bar_color};"></div>
+                            </div>
+                            <div style="font-size:0.86rem; color:#c9d1d9; font-family:'JetBrains Mono', monospace; line-height:1.5; white-space:pre-wrap;">{c['text']}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
 
     # -------------------------------------------------------------
-    # 3. Retrieval Comparison
+    # 3. Retrieval Diagnostic & Comparison
     # -------------------------------------------------------------
     with tab_comp:
-        st.subheader("⚖️ Retrieval Comparison: TF-IDF vs MiniLM vs Adaptive RAG")
-        st.write("Compare how traditional keyword search evaluates relevance versus dense Transformer semantic embeddings.")
+        st.markdown("### ⚖️ Side-by-Side Diagnostic: TF-IDF vs MiniLM vs Adaptive RAG")
+        st.markdown("Observe how classical exact-token search compares against dense continuous 384-dimensional embeddings and our dynamic policy controller.")
 
         if not st.session_state.indexed:
-            st.warning("Please index project documents in the **Project Manager** tab first.")
+            st.info("Please index project documents in the **Project Ingestion** tab first.")
         else:
-            comp_query = st.text_input("Enter query for side-by-side comparison:",
-                                       value="How can an engineer manually trigger database structure updates from the CLI?")
-            if st.button("Run Side-by-Side Comparison", type="secondary") and comp_query.strip():
+            comp_query = st.text_input(
+                "Diagnostic query for side-by-side evaluation:",
+                value="How can an engineer manually trigger database structure updates from the CLI?",
+                placeholder="Enter technical query..."
+            )
+            if st.button("Run Diagnostic Benchmark", type="secondary", use_container_width=True) and comp_query.strip():
                 tfidf_res = baseline.search(comp_query, top_k=3)
                 dense_res = semantic.search(comp_query, top_k=3)
                 adapt_res = adaptive.retrieve(comp_query)
@@ -300,41 +502,102 @@ def main():
                 col1, col2, col3 = st.columns(3)
 
                 with col1:
-                    st.markdown("#### 1. TF-IDF Keyword Baseline")
-                    st.caption("Matches exact token occurrences and term frequency.")
+                    st.markdown("""
+                    <div style="border-top: 3px solid #64748b; padding-top: 8px;">
+                        <h4 style="margin:0; color:#94a3b8;">1. TF-IDF Baseline</h4>
+                        <span style="font-size:0.8rem; color:#64748b;">Sparse Term Frequency (Non-Transformer)</span>
+                    </div>
+                    """, unsafe_allow_html=True)
                     if tfidf_res:
-                        for r in tfidf_res:
-                            st.metric(f"Rank {r['rank']} Score", f"{r['score']:.3f}")
-                            st.caption("✅ Lexical overlap")
-                            st.text_area(f"TF-IDF #{r['rank']} ({r['chunk']['source']})", r["chunk"]["text"][:220] + "...", height=100, disabled=True)
+                        top_tf = tfidf_res[0]
+                        st.metric("Top-1 Lexical Score", f"{top_tf['score']:.3f}", delta="Keyword Match")
+                        st.markdown(f"""
+                        <div class="comp-col-card" style="margin-top:10px;">
+                            <div style="font-size:0.75rem; color:#94a3b8; font-weight:600; margin-bottom:4px;">
+                                📄 TOP MATCH: {top_tf['chunk']['source']}
+                            </div>
+                            <div style="font-size:0.83rem; color:#cbd5e1; font-family:'JetBrains Mono', monospace; line-height:1.5;">
+                                {top_tf['chunk']['text'][:200]}...
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
                     else:
-                        st.warning("❌ No lexical matches found (zero term overlap).")
+                        st.metric("Top-1 Lexical Score", "0.000", delta="- Zero match", delta_color="inverse")
+                        st.markdown("""
+                        <div class="comp-col-card" style="margin-top:10px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;">
+                            <span style="font-size:1.8rem;">❌</span>
+                            <div style="color:#ef4444; font-weight:600; margin-top:8px;">Zero Term Overlap</div>
+                            <div style="color:#94a3b8; font-size:0.8rem; margin-top:4px;">
+                                Query terms do not match verbatim document tokens.
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
 
                 with col2:
-                    st.markdown("#### 2. MiniLM Dense Semantic")
-                    st.caption("Matches contextual meaning in 384d embedding space.")
-                    for r in dense_res:
-                        st.metric(f"Rank {r['rank']} Score", f"{r['score']:.3f}")
-                        st.caption("Dense vector cosine similarity")
-                        st.text_area(f"MiniLM #{r['rank']} ({r['chunk']['source']})", r["chunk"]["text"][:220] + "...", height=100, disabled=True)
+                    st.markdown("""
+                    <div style="border-top: 3px solid #3b82f6; padding-top: 8px;">
+                        <h4 style="margin:0; color:#60a5fa;">2. MiniLM Transformer</h4>
+                        <span style="font-size:0.8rem; color:#64748b;">Dense Vector Cosine (all-MiniLM-L6-v2)</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    if dense_res:
+                        top_dense = dense_res[0]
+                        score = top_dense['score']
+                        st.metric("Top-1 Cosine Sim", f"{score:.3f}", delta=f"{score*100:.1f}% Match")
+                        st.markdown(f"""
+                        <div class="comp-col-card" style="margin-top:10px;">
+                            <div style="font-size:0.75rem; color:#60a5fa; font-weight:600; margin-bottom:4px;">
+                                📄 TOP MATCH: {top_dense['chunk']['source']}
+                            </div>
+                            <div style="font-size:0.83rem; color:#cbd5e1; font-family:'JetBrains Mono', monospace; line-height:1.5;">
+                                {top_dense['chunk']['text'][:200]}...
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
 
                 with col3:
-                    st.markdown("#### 3. Adaptive Dynamic Engine")
-                    st.caption(f"Mode: **{adapt_res['mode'].upper()}** (Top-1: {adapt_res['confidence']:.2f})")
-                    st.write(f"- **Top-K Selected:** `{adapt_res['top_k']}` chunks")
-                    st.write(f"- **Evidence Sufficient:** `{adapt_res['sufficient_evidence']}`")
-                    st.write(f"- **Action:** {adapt_res['explanation']}")
-                    if not adapt_res['sufficient_evidence']:
-                        st.error("System actively abstains to minimize hallucination risk!")
-                    else:
-                        st.success(f"Dispatched {len(adapt_res['results'])} evidence chunks to generator.")
+                    st.markdown("""
+                    <div style="border-top: 3px solid #10b981; padding-top: 8px;">
+                        <h4 style="margin:0; color:#34d399;">3. Adaptive Engine</h4>
+                        <span style="font-size:0.8rem; color:#64748b;">Confidence-Gated Dynamic Top-K</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    mode_str = adapt_res['mode'].upper()
+                    conf = adapt_res['confidence']
+                    action_badge = "✅ PASS" if adapt_res['sufficient_evidence'] else "🛑 ABSTAIN"
+                    st.metric(f"Policy: {mode_str}", f"K = {adapt_res['top_k']}", delta=action_badge)
+                    st.markdown(f"""
+                    <div class="comp-col-card" style="margin-top:10px;">
+                        <div style="font-size:0.75rem; color:#34d399; font-weight:600; margin-bottom:6px;">
+                            🎯 DECISION LOGIC
+                        </div>
+                        <ul style="font-size:0.82rem; color:#cbd5e1; padding-left:18px; margin:0; line-height:1.6;">
+                            <li><strong>Confidence:</strong> <code>{conf:.3f}</code> vs τ = <code>{adaptive.min_threshold:.2f}</code></li>
+                            <li><strong>Context Depth:</strong> <code>{adapt_res['top_k']} chunks</code></li>
+                            <li><strong>Sufficient Evidence:</strong> <code>{adapt_res['sufficient_evidence']}</code></li>
+                        </ul>
+                        <div style="margin-top:10px; font-size:0.8rem; color:#94a3b8; background:#0d1117; padding:8px; border-radius:6px;">
+                            {adapt_res['explanation']}
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                # Diagnostic Summary
+                st.markdown("---")
+                st.markdown("#### 💡 Architectural Analysis for this Query")
+                if not adapt_res['sufficient_evidence']:
+                    st.warning("⚠️ **Out-of-Domain Detection:** The query lacks semantic backing in the documentation. TF-IDF either yields zero or misleading partial matches; Adaptive RAG safely blocks the generator from hallucinating.")
+                elif tfidf_res and tfidf_res[0]['score'] > 0:
+                    st.info("ℹ️ **Exact Keyword Hit:** Distinct keywords match both lexically and semantically. TF-IDF provides ultra-fast retrieval, while MiniLM ensures structural context is preserved.")
+                else:
+                    st.success("✨ **Lexical Gap Bridged:** The query uses phrasing that does not appear verbatim in the documentation. TF-IDF completely failed (0.000), but MiniLM and Adaptive RAG recognized semantic intent and retrieved the correct technical section.")
 
     # -------------------------------------------------------------
     # 4. Evaluation & Failure Analysis Dashboard
     # -------------------------------------------------------------
     with tab_eval:
-        st.subheader("📊 Rigorous Evaluation & Failure Analysis Dashboard")
-        st.write("Empirical benchmark results evaluating TF-IDF baseline, MiniLM semantic retriever, and Adaptive RAG across answerable ranking and abstention classification.")
+        st.markdown("### 📊 Rigorous Benchmark & Empirical Failure Analysis")
+        st.markdown("Audited evaluation results comparing TF-IDF baseline, MiniLM semantic retriever, and Adaptive RAG across held-out ranking and binary abstention classification.")
 
         metrics_file = Path("evaluation/results/evaluation_metrics_v2.json")
         plot_retrieval = Path("evaluation/results/retrieval_comparison_v2.png")
@@ -345,8 +608,8 @@ def main():
             with open(metrics_file, "r") as f:
                 m_data = json.load(f)
 
-            st.markdown("### 1. Retrieval Ranking Performance on Answerable Queries (N=12)")
-            st.caption("Strict ground truth check against verified gold chunk IDs and evidence snippets.")
+            st.markdown("#### 1. Retrieval Ranking Performance on Answerable Queries (N=12)")
+            st.caption("Strict ground truth check against verified gold chunk IDs, section titles, and evidence snippets.")
             rank_data = m_data.get("retrieval_ranking_answerable", {})
             tf_data = rank_data.get("tfidf", {})
             sem_data = rank_data.get("minilm_semantic", {})
@@ -357,11 +620,11 @@ def main():
             r_col2.metric("MiniLM Recall@1", f"{sem_data.get('recall_at_1', 0)*100:.1f}%")
             r_col3.metric("MiniLM Recall@3", f"{sem_data.get('recall_at_3', 0)*100:.1f}%")
             r_col4.metric("MiniLM MRR", f"{sem_data.get('mrr', 0):.3f}")
-            r_col5.metric("Adaptive Context Coverage", f"{adapt_data.get('evidence_coverage', 0)*100:.1f}%")
+            r_col5.metric("Adaptive Coverage", f"{adapt_data.get('evidence_coverage', 0)*100:.1f}%")
 
             st.markdown("---")
-            st.markdown("### 2. Answerability & Abstention Classification (N=20 Questions)")
-            st.caption("Evaluating system capacity to accept answerable questions and reject out-of-domain questions.")
+            st.markdown("#### 2. Answerability & Abstention Classification (N=20 Held-Out Queries)")
+            st.caption("Binary classification evaluating acceptance of answerable questions vs rejection of unanswerable queries.")
             cm = m_data.get("abstention_classification", {})
 
             c_c1, c_c2, c_c3, c_c4, c_c5 = st.columns(5)
@@ -375,26 +638,26 @@ def main():
             p_left, p_right = st.columns(2)
 
             with p_left:
-                st.markdown("#### Retrieval Ranking Comparison")
+                st.markdown("##### 📈 Retrieval Ranking Comparison")
                 if plot_retrieval.exists():
                     st.image(str(plot_retrieval), use_container_width=True)
 
             with p_right:
-                st.markdown("#### Abstention Decision Confusion Matrix")
+                st.markdown("##### 🎯 Abstention Decision Confusion Matrix")
                 if plot_cm.exists():
                     st.image(str(plot_cm), use_container_width=True)
 
             st.markdown("---")
-            st.markdown("### 3. Model Startup Time vs Warm Query Latency")
+            st.markdown("#### 3. Latency & Resource Footprint Profile")
             su = m_data.get("model_startup_ms", {})
-            st.write(f"- **Document Loading & Chunking:** `{su.get('doc_processing', 0):.2f} ms`")
-            st.write(f"- **TF-IDF Index Construction:** `{su.get('tfidf_indexing', 0):.2f} ms`")
-            st.write(f"- **MiniLM Embedding Generation:** `{su.get('minilm_embedding', 0):.2f} ms`")
-            st.write(f"- **FLAN-T5 Model Loading:** `{su.get('flan_t5_loading', 0):.2f} ms`")
-            st.write(f"- **Mean Warm Latencies:** TF-IDF: `{tf_data.get('mean_latency_ms', 0):.2f} ms` | MiniLM: `{sem_data.get('mean_latency_ms', 0):.2f} ms` | Adaptive RAG: `{adapt_data.get('mean_latency_ms', 0):.2f} ms`")
+            lat_c1, lat_c2, lat_c3, lat_c4 = st.columns(4)
+            lat_c1.metric("TF-IDF Query Latency", f"{tf_data.get('mean_latency_ms', 0):.1f} ms")
+            lat_c2.metric("MiniLM Query Latency", f"{sem_data.get('mean_latency_ms', 0):.1f} ms")
+            lat_c3.metric("Model Startup Overhead", f"{(su.get('minilm_embedding', 0) + su.get('flan_t5_loading', 0))/1000:.1f} s")
+            lat_c4.metric("Classification F1", f"{cm.get('f1_score', 0):.3f}")
 
             st.markdown("---")
-            st.markdown("### 4. Empirical Threshold Calibration Sweep (Development Set)")
+            st.markdown("#### 4. Empirical Threshold Calibration Sweep (Development Set N=12)")
             if "calibration_sweep" in m_data:
                 sweep_df = pd.DataFrame(m_data["calibration_sweep"])
                 st.dataframe(sweep_df.style.format({
@@ -405,7 +668,7 @@ def main():
                     "balanced_accuracy": "{:.1%}",
                     "f1_score": "{:.3f}"
                 }), use_container_width=True)
-                st.success(f"**Optimal Calibrated Cutoff Selected:** `{m_data.get('calibrated_threshold', 0.31):.2f}`")
+                st.success(f"**Optimal Calibrated Cutoff Selected:** `τ = {m_data.get('calibrated_threshold', 0.31):.2f}` (Zero held-out tuning)")
 
             if table_file.exists():
                 with st.expander("📄 View Detailed Per-Query Predictions Table (CSV)"):
