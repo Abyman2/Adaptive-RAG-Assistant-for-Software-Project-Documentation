@@ -49,6 +49,29 @@ def test_invalid_chunk_size():
         chunk_document(document, chunk_size=100, overlap=-5)
 
 
+def test_directory_filtering(tmp_path):
+    """Test that load_directory skips ignored folders like .git, .venv, node_modules."""
+    from src.document_loader import load_directory
+    
+    # Create valid doc
+    (tmp_path / "README.md").write_text("Valid project documentation here.", encoding="utf-8")
+    
+    # Create ignored directories and files
+    git_dir = tmp_path / ".git"
+    git_dir.mkdir()
+    (git_dir / "config.txt").write_text("git config content", encoding="utf-8")
+    
+    venv_dir = tmp_path / ".venv"
+    venv_dir.mkdir()
+    (venv_dir / "lib.py").write_text("venv code", encoding="utf-8")
+    
+    docs = load_directory(tmp_path)
+    sources = [d["source"] for d in docs]
+    assert "README.md" in sources
+    assert not any(".git" in s for s in sources)
+    assert not any(".venv" in s for s in sources)
+
+
 def test_process_documents_multi():
     """Test processing multiple documents and global ID indexing."""
     docs = [
@@ -105,3 +128,4 @@ def test_adaptive_retrieval_modes():
     res_low = adaptive_low.retrieve("query")
     assert res_low["mode"] == "broad"
     assert res_low["sufficient_evidence"] is False
+

@@ -59,3 +59,4 @@ def test_baseline_and_adaptive_integration():
     res_low = adaptive.retrieve("completely unrelated quantum physics query")
     assert res_low["mode"] == "broad"
     assert res_low["sufficient_evidence"] is False
+

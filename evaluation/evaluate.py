@@ -4,9 +4,11 @@ Compares:
 2. Semantic MiniLM Retriever (Static top-k)
 3. Adaptive MiniLM Retriever (Dynamic top-k + confidence gating)
 
-Calculates Recall@1, Recall@3, Recall@5, MRR, Abstention Accuracy, and Latency
-on both Development and Held-out evaluation sets.
-Generates evaluation tables and visualization plots.
+Includes:
+- Empirical threshold calibration sweep on the Development Set.
+- Frozen held-out test set evaluation.
+- Calculations for Recall@1, Recall@3, Recall@5, MRR, Abstention Accuracy, and Latency.
+- Generation of CSV tables, JSON metrics, and comparison plots.
 """
 
 import json
@@ -19,14 +21,14 @@ from pathlib import Path
 os.environ["HF_HUB_OFFLINE"] = "1"
 os.environ["TRANSFORMERS_OFFLINE"] = "1"
 
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-
 # Ensure root workspace directory is in sys.path
 root_dir = Path(__file__).resolve().parent.parent
 if str(root_dir) not in sys.path:
     sys.path.insert(0, str(root_dir))
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 
 from src.document_loader import load_document
 from src.chunker import process_documents
@@ -42,6 +44,44 @@ def is_chunk_relevant(chunk_text, expected_keywords):
         if kw.lower() in text_lower:
             return True
     return False
+
+
+def calibrate_thresholds(retriever, dev_dataset):
+    """Empirically sweep candidate abstention thresholds on the Development Set.
+    
+    Inspired by threshold calibration in related work (rag-project-assistant / Emirhan Yildirim).
+    Finds the optimal threshold balancing true positive retrieval with abstention on unanswerable queries.
+    """
+    print("\n--- [Calibration Sweep] Calibrating Abstention Threshold on Development Set ---")
+    candidate_thresholds = [0.22, 0.28, 0.34]
+    sweep_results = []
+
+    answerable = [q for q in dev_dataset if q["answerable"]]
+    unanswerable = [q for q in dev_dataset if not q["answerable"]]
+
+    for thresh in candidate_thresholds:
+        adaptive = AdaptiveRetriever(retriever, min_threshold=thresh)
+        
+        # Check answerable retention
+        ans_pass = sum(1 for q in answerable if adaptive.retrieve(q["question"])["sufficient_evidence"])
+        ans_rate = ans_pass / len(answerable) if answerable else 1.0
+
+        # Check unanswerable rejection (abstention accuracy)
+        unans_rejected = sum(1 for q in unanswerable if not adaptive.retrieve(q["question"])["sufficient_evidence"])
+        unans_rate = unans_rejected / len(unanswerable) if unanswerable else 1.0
+
+        f1_score = 2 * (ans_rate * unans_rate) / (ans_rate + unans_rate) if (ans_rate + unans_rate) > 0 else 0.0
+        sweep_results.append({
+            "threshold": thresh,
+            "answerable_retention": ans_rate,
+            "abstention_accuracy": unans_rate,
+            "calibration_f1": f1_score
+        })
+        print(f"  Candidate Threshold: {thresh:.2f} | Answerable Retention: {ans_rate*100:.1f}% | Abstention Acc: {unans_rate*100:.1f}% | F1: {f1_score:.3f}")
+
+    best = max(sweep_results, key=lambda x: x["calibration_f1"])
+    print(f"==> Calibrated Optimal Abstention Threshold: {best['threshold']:.2f} (F1: {best['calibration_f1']:.3f})")
+    return best["threshold"], sweep_results
 
 
 def evaluate_dataset(retriever, adaptive_retriever, baseline, dataset, chunks, dataset_name="Held-out"):
@@ -117,8 +157,6 @@ def evaluate_dataset(retriever, adaptive_retriever, baseline, dataset, chunks, d
             row["adaptive_hit"] = 1 if any(is_chunk_relevant(t, expected_keywords) for t in adaptive_texts) else 0
             row["adaptive_correct_abstention"] = None
         else:
-            # Unanswerable question:
-            # TF-IDF doesn't have confidence gating, so it retrieves irrelevant text
             row["tfidf_r1"] = 0
             row["tfidf_r3"] = 0
             row["tfidf_r5"] = 0
@@ -128,7 +166,6 @@ def evaluate_dataset(retriever, adaptive_retriever, baseline, dataset, chunks, d
             row["sem_r5"] = 0
             row["sem_mrr"] = 0.0
             row["adaptive_hit"] = 0
-            # Correct abstention: adaptive system recognized insufficient evidence!
             row["adaptive_correct_abstention"] = 1 if not adaptive_info["sufficient_evidence"] else 0
 
         results.append(row)
@@ -137,10 +174,10 @@ def evaluate_dataset(retriever, adaptive_retriever, baseline, dataset, chunks, d
 
 
 def run_benchmark():
-    """Execute complete benchmark on Dev and Held-out sets."""
-    print("=" * 60)
-    print("Starting Benchmark: Adaptive RAG Assistant for Software Docs")
-    print("=" * 60)
+    """Execute complete benchmark with empirical calibration on Dev and evaluation on Held-out."""
+    print("=" * 65)
+    print("Adaptive RAG Assistant for Software Docs - Benchmark & Calibration")
+    print("=" * 65)
 
     dataset_path = Path("evaluation/dataset.json")
     with open(dataset_path, "r", encoding="utf-8") as f:
@@ -160,14 +197,17 @@ def run_benchmark():
     semantic = SemanticRetriever()
     semantic.index(chunks)
 
-    print("[3/3] Initializing Adaptive Retriever...")
-    adaptive = AdaptiveRetriever(semantic)
+    # Calibrate abstention threshold on Development Set
+    optimal_threshold, calibration_sweep = calibrate_thresholds(semantic, data["development_set"])
+
+    print("\n[3/3] Initializing Adaptive Retriever with Calibrated Threshold...")
+    adaptive = AdaptiveRetriever(semantic, min_threshold=optimal_threshold)
 
     # Evaluate Development Set
     print("\n--- Evaluating Development Set (12 questions) ---")
     dev_results = evaluate_dataset(semantic, adaptive, tfidf, data["development_set"], chunks, dataset_name="Development")
 
-    # Evaluate Held-out Set
+    # Evaluate Held-out Set (Frozen pipeline)
     print("--- Evaluating Held-out Set (8 questions) ---")
     held_results = evaluate_dataset(semantic, adaptive, tfidf, data["held_out_set"], chunks, dataset_name="Held-out")
 
@@ -180,7 +220,10 @@ def run_benchmark():
     df.to_csv(output_dir / "comparison_table.csv", index=False)
 
     # Summary metrics computation
-    summary = {}
+    summary = {
+        "calibration_sweep": calibration_sweep,
+        "calibrated_threshold": optimal_threshold
+    }
     for subset in ["Development", "Held-out"]:
         sub_df = df[df["dataset"] == subset]
         answerable_df = sub_df[sub_df["answerable"] == True]
@@ -209,9 +252,9 @@ def run_benchmark():
         json.dump(summary, f, indent=2)
 
     # Print clean Markdown summary table
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 65)
     print("BENCHMARK SUMMARY RESULTS")
-    print("=" * 60)
+    print("=" * 65)
     print("\n### Held-Out Test Set Performance (N=8 questions):")
     print(f"| Metric | TF-IDF Baseline | MiniLM Semantic | Adaptive MiniLM |")
     print(f"| :--- | :---: | :---: | :---: |")
@@ -258,17 +301,15 @@ def run_benchmark():
     print(f"\nPlot saved to {plot_path}")
 
     # Failure Analysis Output
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 65)
     print("FAILURE ANALYSIS HIGHLIGHTS")
-    print("=" * 60)
-    # Find queries where TF-IDF failed but Semantic succeeded (Lexical gap)
+    print("=" * 65)
     lexical_gap = df[(df["tfidf_r1"] == 0) & (df["sem_r1"] == 1)]
     print(f"\n1. Lexical Gap Failures in Baseline (TF-IDF Failed, Semantic Succeeded): {len(lexical_gap)} instances")
     for _, r in lexical_gap.head(2).iterrows():
         print(f"   - Query: '{r['question']}'")
-        print(f"     Reason: Developer phrasing differed from exact terminology in doc.")
+        print(f"     Reason: Phrasing mismatch between developer terms and indexed documentation.")
 
-    # Unanswerable queries
     unans = df[df["answerable"] == False]
     print(f"\n2. Unanswerable & Out-of-Domain Queries: {len(unans)} instances")
     for _, r in unans.head(2).iterrows():

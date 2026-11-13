@@ -1,4 +1,25 @@
 {
+  "calibration_sweep": [
+    {
+      "threshold": 0.22,
+      "answerable_retention": 1.0,
+      "abstention_accuracy": 0.5,
+      "calibration_f1": 0.6666666666666666
+    },
+    {
+      "threshold": 0.28,
+      "answerable_retention": 1.0,
+      "abstention_accuracy": 1.0,
+      "calibration_f1": 1.0
+    },
+    {
+      "threshold": 0.34,
+      "answerable_retention": 1.0,
+      "abstention_accuracy": 1.0,
+      "calibration_f1": 1.0
+    }
+  ],
+  "calibrated_threshold": 0.28,
   "Development": {
     "total_questions": 12,
     "answerable_count": 10,
@@ -7,15 +28,15 @@
     "tfidf_recall_at_3": 1.0,
     "tfidf_recall_at_5": 1.0,
     "tfidf_mrr": 0.9,
-    "tfidf_latency_ms": 3.2189289728800454,
+    "tfidf_latency_ms": 4.6289364496866865,
     "semantic_recall_at_1": 0.9,
     "semantic_recall_at_3": 1.0,
     "semantic_recall_at_5": 1.0,
     "semantic_mrr": 0.95,
-    "semantic_latency_ms": 44.01324192682902,
+    "semantic_latency_ms": 100.72918732961018,
     "adaptive_evidence_recall": 1.0,
     "adaptive_abstention_accuracy": 1.0,
-    "adaptive_latency_ms": 107.30499029159546
+    "adaptive_latency_ms": 141.9758995374044
   },
   "Held-out": {
     "total_questions": 8,
@@ -25,14 +46,14 @@
     "tfidf_recall_at_3": 1.0,
     "tfidf_recall_at_5": 1.0,
     "tfidf_mrr": 1.0,
-    "tfidf_latency_ms": 5.936086177825928,
+    "tfidf_latency_ms": 6.228208541870117,
     "semantic_recall_at_1": 1.0,
     "semantic_recall_at_3": 1.0,
     "semantic_recall_at_5": 1.0,
     "semantic_mrr": 1.0,
-    "semantic_latency_ms": 93.76180171966553,
+    "semantic_latency_ms": 77.24383473396301,
     "adaptive_evidence_recall": 1.0,
     "adaptive_abstention_accuracy": 0.5,
-    "adaptive_latency_ms": 156.48439526557922
+    "adaptive_latency_ms": 177.19897627830505
   }
 }

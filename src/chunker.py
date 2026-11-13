@@ -62,3 +62,4 @@ def process_documents(documents, chunk_size=180, overlap=40):
         c["global_id"] = idx
         
     return all_chunks
+
